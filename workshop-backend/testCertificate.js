@@ -1,8 +1,8 @@
 const generateCertificate = require('./certificateTemplate');
 
 generateCertificate({
-  name: 'John Doe',
+  name: 'Radhey',
   workshop: 'Intro to JavaScript',
-  college: 'XYZ College',
+  college: 'Xavier',
   date: 'June 12, 2025'
 }, './certificates/john-doe.pdf');
