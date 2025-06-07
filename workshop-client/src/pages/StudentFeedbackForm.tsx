@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import OtpInput from '../components/OtpInput';
+// import OtpInput from '../components/OtpInput'; // ⛔ Commented out OTP input
 
 interface FormData {
   collegeName: string;
@@ -23,10 +23,10 @@ const StudentFeedbackForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [feedback, setFeedback] = useState('');
 
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpError, setOtpError] = useState('');
-  const [otpLoading, setOtpLoading] = useState(false);
+  // const [emailVerified, setEmailVerified] = useState(false);
+  // const [phoneVerified, setPhoneVerified] = useState(false);
+  // const [otpError, setOtpError] = useState('');
+  // const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -48,9 +48,9 @@ const StudentFeedbackForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailVerified || !phoneVerified) {
-      return alert('Please verify both email and phone number before submitting.');
-    }
+    // if (!emailVerified || !phoneVerified) {
+    //   return alert('Please verify both email and phone number before submitting.');
+    // }
 
     try {
       const submissionRef = doc(db, 'submissions', `${formId}_${email}`);
@@ -117,42 +117,30 @@ const StudentFeedbackForm: React.FC = () => {
                   <input type="text" className="form-control" value={course} onChange={(e) => setCourse(e.target.value)} required />
                 </div>
 
-                <OtpInput
-                  label="Phone (+91XXXXXXXXXX)"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  name="phone"
-                  type="phone"
-                  setVerified={setPhoneVerified}
-                  setOtpError={setOtpError}
-                  setOtpLoading={setOtpLoading}
-                />
+                <div className="mb-3">
+                  <label className="form-label">Phone (+91XXXXXXXXXX)</label>
+                  <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                </div>
 
-                <OtpInput
-                  label="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  name="email"
-                  type="email"
-                  setVerified={setEmailVerified}
-                  setOtpError={setOtpError}
-                  setOtpLoading={setOtpLoading}
-                />
+                <div className="mb-3">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
 
                 <div className="mb-3">
                   <label className="form-label">Feedback</label>
                   <textarea className="form-control" rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)} required />
                 </div>
 
-                {otpError && <div className="alert alert-danger">{otpError}</div>}
+                {/* {otpError && <div className="alert alert-danger">{otpError}</div>} */}
 
                 <div className="d-grid">
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={!emailVerified || !phoneVerified || otpLoading}
+                    // disabled={!emailVerified || !phoneVerified || otpLoading}
                   >
-                    {otpLoading ? 'Submitting...' : 'Submit Feedback'}
+                    Submit Feedback
                   </button>
                 </div>
               </form>
