@@ -1,58 +1,122 @@
 // workshop-backend/certificateTemplate.js
+
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
-function generateCertificate({ name, workshop, college, date }, outputPath) {
-  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+function generateCertificate({ name, course, workshop, college, date }, outputPath) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 50 });
 
-  doc.pipe(fs.createWriteStream(outputPath));
+    const logoPath = path.join(__dirname, 'assets', 'logo.jpg');
+    const bgPath = path.join(__dirname, 'assets', 'background.png');
 
-  // Title
-  doc
-    .fontSize(26)
-    .text('Certificate of Participation', { align: 'center' })
-    .moveDown(1.5);
+    const stream = fs.createWriteStream(outputPath);
+    doc.pipe(stream);
 
-  // Content box
-  doc
-    .fontSize(16)
-    .text(`This is to certify that`, { align: 'center' })
-    .moveDown(0.5);
+    // Add background
+    if (fs.existsSync(bgPath)) {
+      doc.image(bgPath, 0, 0, {
+        width: doc.page.width,
+        height: doc.page.height,
+        opacity: 0.1,
+      });
+    }
 
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(20)
-    .text(`${name}`, { align: 'center' })
-    .font('Helvetica')
-    .moveDown(0.5);
+    // Border
+    doc.lineWidth(4).rect(20, 20, doc.page.width - 40, doc.page.height - 40).stroke('#004080');
 
-  doc
-    .fontSize(16)
-    .text(`has successfully participated in the`, { align: 'center' })
-    .text(`${workshop}`, { align: 'center', underline: true })
-    .moveDown(0.5);
+    // Logo
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, doc.page.width / 2 - 50, 30, { width: 100 });
+    }
 
-  doc
-    .text(`organized by`, { align: 'center' })
-    .text(`${college}`, { align: 'center', underline: true })
-    .moveDown(0.5);
+    // Header
+    doc
+      .fillColor('#004080')
+      .font('Helvetica-Bold')
+      .fontSize(28)
+      .text('CERTIFICATE OF PARTICIPATION', {
+        align: 'center',
+        underline: true,
+      })
+      .moveDown(1.2);
 
-  doc
-    .text(`on ${date}`, { align: 'center' })
-    .moveDown(2);
+    // Certificate ID
+    const certificateId = uuidv4().slice(0, 8).toUpperCase();
+    doc
+      .font('Helvetica')
+      .fontSize(10)
+      .fillColor('gray')
+      .text(`Certificate ID: ${certificateId}`, {
+        align: 'right',
+      })
+      .moveDown(1);
 
-  // Signature area
-  doc
-    .text('______________________', 100, doc.y, { continued: true })
-    .text('                    ', { continued: true })
-    .text('______________________', { align: 'right' });
+    // Body text
+    doc
+      .fillColor('black')
+      .font('Helvetica')
+      .fontSize(16)
+      .text(`This is to certify that`, {
+        align: 'center',
+      })
+      .moveDown(0.5);
 
-  doc
-    .text('  Coordinator', 100, doc.y)
-    .text('                                                ')
-    .text('  Head of Department', { align: 'right' });
+    // Student name in cursive-style
+    doc
+      .font('Times-Italic')
+      .fontSize(26)
+      .text(name.toUpperCase(), {
+        align: 'center',
+      })
+      .moveDown(0.5);
 
-  doc.end();
+    doc
+      .font('Helvetica')
+      .fontSize(16)
+      .text(`a student of`, { align: 'center' })
+      .font('Helvetica-Bold')
+      .text(college, { align: 'center' })
+      .moveDown(0.5);
+
+    doc
+      .font('Helvetica')
+      .text(`has successfully participated in the workshop titled`, { align: 'center' })
+      .font('Helvetica-Bold')
+      .text(`"${workshop}"`, { align: 'center' })
+      .moveDown(0.5);
+
+    doc
+      .font('Helvetica')
+      .text(`conducted on`, { align: 'center' })
+      .font('Helvetica-Bold')
+      .text(date, { align: 'center' })
+      .moveDown(0.5);
+
+    doc
+      .font('Helvetica')
+      .text(`as part of the course:`, { align: 'center' })
+      .font('Helvetica-Bold')
+      .text(course, { align: 'center' })
+      .moveDown(2);
+
+    // Footer: Signatures
+    const signatureY = doc.y + 40;
+    doc
+      .fontSize(14)
+      .text('_______________________', 100, signatureY)
+      .text('Coordinator', 130, signatureY + 15)
+
+      .text('_______________________', doc.page.width - 250, signatureY)
+      .text('Head of Department', doc.page.width - 240, signatureY + 15);
+
+    doc.end();
+
+    stream.on('finish', () => resolve());
+    stream.on('error', reject);
+  });
 }
 
 module.exports = generateCertificate;
