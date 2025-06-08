@@ -137,3 +137,6 @@ dist
 
 # Ignore secret key file
 workshop-backend/serviceAccountKey.json
+
+# Firebase secret key
+workshop-backend/serviceAccountKey.json.json
