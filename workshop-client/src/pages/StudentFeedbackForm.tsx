@@ -18,6 +18,7 @@ const StudentFeedbackForm: React.FC = () => {
   const [formDetails, setFormDetails] = useState<FormData | null>(null);
   const [loading, setLoading] = useState(true);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [name, setName] = useState('');
   const [course, setCourse] = useState('');
@@ -45,14 +46,16 @@ const StudentFeedbackForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setSubmitting(true);
     try {
       const submissionRef = doc(db, 'submissions', `${formId}_${email}`);
       const existing = await getDoc(submissionRef);
       if (existing.exists()) {
-        return alert('You have already submitted feedback.');
+        alert('You have already submitted feedback.');
+        return;
       }
 
+      // 1. Save feedback
       await setDoc(submissionRef, {
         formId,
         name,
@@ -63,10 +66,24 @@ const StudentFeedbackForm: React.FC = () => {
         timestamp: new Date(),
       });
 
+      // 2. Trigger backend to generate certificate
+      const res = await fetch('http://localhost:5000/generate-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formId, name, course, phone, email }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Certificate generation failed');
+      }
+
       setFormSubmitted(true);
     } catch (error) {
       console.error('Submission error:', error);
-      alert('Failed to submit feedback. Please try again.');
+      alert('Failed to submit feedback or generate certificate. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -86,85 +103,43 @@ const StudentFeedbackForm: React.FC = () => {
     );
   }
 
-  // if (formSubmitted) {
-  //   return (
-  //     <div className="alert alert-success text-center mt-5">
-  //       ✅ Thank you! Your feedback has been submitted.
-  //     </div>
-  //   );
-  // }
-//   if (formSubmitted) {
-//   return (
-//     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-//       <div className="text-center p-4 rounded-4 shadow-sm bg-white border-0" style={{ maxWidth: '600px' }}>
-//         <div className="mb-3">
-//           <div
-//             className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle"
-//             style={{ width: '60px', height: '60px', fontSize: '30px' }}
-//           >
-//             ✓
-//           </div>
-//         </div>
-//         <h4 className="fw-bold text-dark mb-3">Thank you! 🎉</h4>
-//         <p className="text-secondary mb-2">
-//           Your feedback has been successfully submitted.
-//         </p>
-//         <p className="text-secondary mb-4">
-//           Your certificate will be generated and sent shortly to:
-//         </p>
-//         <div className="text-start">
-//           <p className="mb-1"><strong>📧 Email:</strong> {email}</p>
-//           <p className="mb-0"><strong>📱 WhatsApp:</strong> {phone}</p>
-//         </div>
-//         <hr className="my-4" />
-//         <p className="text-muted small">
-//           Please ensure your contact details are correct. For any issues, contact the coordinator.
-//         </p>
-//       </div>
-//     </div>
-//   );
-// }
-if (formSubmitted) {
-  return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="text-center p-5 rounded-4 shadow-sm bg-white border-0" style={{ maxWidth: '600px' }}>
-        <div className="mb-4">
-          <div
-            className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle"
-            style={{ width: '60px', height: '60px', fontSize: '30px' }}
-          >
-            ✓
+  if (formSubmitted) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+        <div className="text-center p-5 rounded-4 shadow-sm bg-white border-0" style={{ maxWidth: '600px' }}>
+          <div className="mb-4">
+            <div
+              className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle"
+              style={{ width: '60px', height: '60px', fontSize: '30px' }}
+            >
+              ✓
+            </div>
           </div>
-        </div>
-        <h4 className="fw-bold text-dark mb-2">Thank you! 🎉</h4>
-        <p className="text-secondary mb-3">
-          Your feedback has been successfully submitted.
-        </p>
-        <p className="text-dark fw-medium mb-4">
-          Your certificate will be generated and sent shortly to your verified:
-        </p>
-
-        <div className="d-flex flex-column align-items-center mb-4">
-          <p className="mb-2">
-            <span className="fw-bold text-dark">📱 WhatsApp:</span>{' '}
-            <span className="text-secondary">{phone}</span>
+          <h4 className="fw-bold text-dark mb-2">Thank you! 🎉</h4>
+          <p className="text-secondary mb-3">
+            Your feedback has been successfully submitted.
           </p>
-          <p className="mb-0">
-            <span className="fw-bold text-dark">📧 Email:</span>{' '}
-            <span className="text-secondary">{email}</span>
+          <p className="text-dark fw-medium mb-4">
+            Your certificate will be generated and sent shortly to your verified:
+          </p>
+          <div className="d-flex flex-column align-items-center mb-4">
+            <p className="mb-2">
+              <strong className="text-dark">📱 WhatsApp:</strong>{' '}
+              <span className="text-secondary">{phone}</span>
+            </p>
+            <p className="mb-0">
+              <strong className="text-dark">📧 Email:</strong>{' '}
+              <span className="text-secondary">{email}</span>
+            </p>
+          </div>
+          <hr className="my-4" />
+          <p className="text-muted small">
+            Please ensure your contact details are correct. For any issues, contact the coordinator.
           </p>
         </div>
-
-        <hr className="my-4" />
-        <p className="text-muted small">
-          Please ensure your contact details are correct. For any issues, contact the coordinator.
-        </p>
       </div>
-    </div>
-  );
-}
-
-
+    );
+  }
 
   return (
     <div className="bg-light min-vh-100">
@@ -190,82 +165,37 @@ if (formSubmitted) {
       <div className="container" style={{ marginTop: '-90px' }}>
         <div className="row justify-content-center">
           <div className="col-12 col-md-10 col-lg-8">
-            shadow-sm border-0
             <div className="card shadow-sm border-0 p-4 rounded-4 bg-white">
-              <h3 className="text-center fw-bold text-warning mb-3">
-                {formDetails.workshopName}
-              </h3>
-
-              <p className="mb-1">
-                <strong>College:</strong> {formDetails.collegeName}
-              </p>
-              <p className="mb-3">
-                <strong>Date & Time:</strong> {formDetails.dateTime}
-              </p>
-
+              <h3 className="text-center fw-bold text-warning mb-3">{formDetails.workshopName}</h3>
+              <p className="mb-1"><strong>College:</strong> {formDetails.collegeName}</p>
+              <p className="mb-3"><strong>Date & Time:</strong> {formDetails.dateTime}</p>
               {formDetails.instructions && (
                 <div className="alert alert-info small">{formDetails.instructions}</div>
               )}
-
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label">Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
+                  <input type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} required />
                 </div>
-
                 <div className="mb-3">
                   <label className="form-label">Course</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={course}
-                    onChange={(e) => setCourse(e.target.value)}
-                    required
-                  />
+                  <input type="text" className="form-control" value={course} onChange={e => setCourse(e.target.value)} required />
                 </div>
-
                 <div className="mb-3">
                   <label className="form-label">Phone (+91XXXXXXXXXX)</label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
+                  <input type="tel" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} required />
                 </div>
-
                 <div className="mb-3">
                   <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
-
                 <div className="mb-4">
                   <label className="form-label">Feedback</label>
-                  <textarea
-                    className="form-control"
-                    rows={4}
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    required
-                  />
+                  <textarea className="form-control" rows={4} value={feedback} onChange={e => setFeedback(e.target.value)} required />
                 </div>
-
                 <div className="d-grid">
-                  <button type="submit" className="btn btn-warning fw-bold">
-                    Submit Feedback
+                  <button type="submit" className="btn btn-warning fw-bold" disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Submit Feedback'}
                   </button>
                 </div>
               </form>
