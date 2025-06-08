@@ -6,6 +6,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 const { setOtp, verifyOtp } = require("./otpStore");
 const { db } = require("./firebaseAdmin");
@@ -18,12 +19,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // =======================
-// OTP ROUTES
+// Email Transporter Setup
 // =======================
-
-const nodemailer = require("nodemailer");
-
-// Email transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -32,6 +29,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// =======================
+// OTP ROUTES
+// =======================
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -55,7 +55,7 @@ app.post("/sendEmailOtp", async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.json({ success: true, message: "OTP sent successfully" });
   } catch (err) {
-    console.error("Error sending email:", err);
+    console.error("Error sending OTP:", err);
     res.status(500).json({ success: false, message: "Failed to send OTP email" });
   }
 });
@@ -76,7 +76,7 @@ app.post("/verifyEmailOtp", (req, res) => {
 });
 
 // =======================
-// GENERATE CERTIFICATE + SEND EMAIL
+// GENERATE CERTIFICATE + EMAIL
 // =======================
 
 app.post("/generate-certificate", async (req, res) => {
@@ -116,16 +116,31 @@ app.post("/generate-certificate", async (req, res) => {
     );
     console.log("✅ Certificate created at:", outputPath);
 
-    // Send email with certificate
+    // Email body with professional styling
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; color: #333;">
+        <div style="max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1);">
+          <h2 style="text-align: center; color: #004080;">🎉 Congratulations!</h2>
+          <p>Dear <strong>${name}</strong>,</p>
+          <p>Thank you for participating in the workshop <strong>"${workshopName}"</strong> conducted by <strong>${collegeName}</strong> on <strong>${new Date(dateTime).toDateString()}</strong>.</p>
+          <p>We're thrilled to award you a certificate of participation.</p>
+          <p><strong>📎 Your certificate is attached to this email.</strong></p>
+          <hr style="margin: 30px 0;" />
+          <p style="font-size: 14px; color: #777;">
+            If you have any questions or didn’t receive your certificate correctly, feel free to contact the workshop coordinator.
+          </p>
+          <p style="text-align: center; font-size: 13px; color: #aaa;">© ${new Date().getFullYear()} ${collegeName} | All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
     console.log("📧 Sending email to:", email);
+
     await transporter.sendMail({
       from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Your Certificate of Participation 🎓",
-      html: `<p>Dear ${name},</p>
-             <p>Thank you for attending <strong>${workshopName}</strong>!</p>
-             <p>Attached is your certificate of participation.</p>
-             <p>Best regards,<br/>Team Workshop</p>`,
+      subject: `🎓 Your Workshop Certificate from ${collegeName}`,
+      html: htmlBody,
       attachments: [
         {
           filename,
@@ -135,8 +150,8 @@ app.post("/generate-certificate", async (req, res) => {
     });
 
     console.log("📤 Email sent successfully to:", email);
-
     res.json({ success: true, message: "Certificate generated and email sent", filename });
+
   } catch (err) {
     console.error("❌ Error generating or emailing certificate:", err);
     res.status(500).json({ success: false, message: "Certificate generation or email failed" });
