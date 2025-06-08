@@ -8,9 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { setOtp, verifyOtp } = require("./otpStore");
-// const admin = require("./firebaseAdmin");
 const { db } = require("./firebaseAdmin");
-
 const generateCertificate = require("./certificateTemplate");
 
 const app = express();
@@ -78,7 +76,7 @@ app.post("/verifyEmailOtp", (req, res) => {
 });
 
 // =======================
-// GENERATE CERTIFICATE
+// GENERATE CERTIFICATE + SEND EMAIL
 // =======================
 
 app.post("/generate-certificate", async (req, res) => {
@@ -89,9 +87,7 @@ app.post("/generate-certificate", async (req, res) => {
   }
 
   try {
-    // const workshopRef = admin.firestore().collection("workshops").doc(formId);
     const workshopRef = db.collection("workshops").doc(formId);
-
     const snap = await workshopRef.get();
 
     if (!snap.exists) {
@@ -107,6 +103,7 @@ app.post("/generate-certificate", async (req, res) => {
     const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}.pdf`;
     const outputPath = path.join(outputDir, filename);
 
+    console.log("📄 Generating certificate for:", name);
     await generateCertificate(
       {
         name,
@@ -117,11 +114,32 @@ app.post("/generate-certificate", async (req, res) => {
       },
       outputPath
     );
+    console.log("✅ Certificate created at:", outputPath);
 
-    res.json({ success: true, message: "Certificate generated", filename });
+    // Send email with certificate
+    console.log("📧 Sending email to:", email);
+    await transporter.sendMail({
+      from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your Certificate of Participation 🎓",
+      html: `<p>Dear ${name},</p>
+             <p>Thank you for attending <strong>${workshopName}</strong>!</p>
+             <p>Attached is your certificate of participation.</p>
+             <p>Best regards,<br/>Team Workshop</p>`,
+      attachments: [
+        {
+          filename,
+          path: outputPath,
+        },
+      ],
+    });
+
+    console.log("📤 Email sent successfully to:", email);
+
+    res.json({ success: true, message: "Certificate generated and email sent", filename });
   } catch (err) {
-    console.error("Error generating certificate:", err);
-    res.status(500).json({ success: false, message: "Certificate generation failed" });
+    console.error("❌ Error generating or emailing certificate:", err);
+    res.status(500).json({ success: false, message: "Certificate generation or email failed" });
   }
 });
 
