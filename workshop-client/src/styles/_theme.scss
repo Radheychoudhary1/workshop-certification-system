@@ -1,0 +1,151 @@
+@use './variables' as *;
+
+body {
+  font-family: $font-family;
+  background-color: $background-color;
+  color: $primary-color;
+  margin: 0;
+  padding: 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: $radius-md;
+  box-shadow: $shadow-md;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.btn-primary {
+  background-color: $primary-color;
+  color: $secondary-color;
+  border: none;
+  &:hover {
+    background-color: darken($primary-color, 5%);
+  }
+}
+
+.btn-secondary {
+  background-color: $secondary-color;
+  color: $primary-color;
+  border: none;
+  &:hover {
+    background-color: darken($secondary-color, 5%);
+  }
+}
+
+.input {
+  border: 1px solid #ccc;
+  border-radius: $radius-sm;
+  padding: 0.5rem;
+  width: 100%;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+//loading
+
+.global-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.global-loader-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid lighten($primary-color, 20%);
+  border-top: 6px solid $secondary-color;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.custom-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+
+  .page-item {
+    margin: 0 4px;
+
+    .page-link {
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      font-size: 1rem;
+      border-radius: 0.75rem;
+      background-color: $primary-color;
+      color: $secondary-color;
+      border: none;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+      &:hover {
+        background-color: $secondary-color;
+        color: $primary-color;
+        text-decoration: none;
+      }
+    }
+
+    &.active .page-link {
+      background-color: $secondary-color;
+      color: $primary-color;
+      font-weight: 600;
+    }
+
+    &.disabled .page-link {
+      background-color: lighten($primary-color, 10%);
+      color: $secondary-color;
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+}
+
+//custom modal
+.modal-content {
+  border-radius: 1rem;
+  border: none;
+  overflow: hidden;
+}
+
+.modal-header {
+  background-color: $primary-color;
+  color: $secondary-color;
+}
+
+.modal-footer .btn-warning {
+  background-color: $secondary-color;
+  color: $primary-color;
+}
+
+//general
+.text-red {
+  color: red;
+}
+
+.white-space-nowrap {
+  white-space: nowrap;
+}
+
+.top-40 {
+  top: 40%;
+}

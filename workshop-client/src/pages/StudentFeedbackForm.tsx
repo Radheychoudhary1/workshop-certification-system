@@ -1,8 +1,10 @@
+// src/pages/StudentFeedbackForm.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-// import OtpInput from '../components/OtpInput'; // ⛔ Commented out OTP input
+import bannerImage from '../assets/images/login-bg.jpg';
 
 interface FormData {
   collegeName: string;
@@ -22,11 +24,6 @@ const StudentFeedbackForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [feedback, setFeedback] = useState('');
-
-  // const [emailVerified, setEmailVerified] = useState(false);
-  // const [phoneVerified, setPhoneVerified] = useState(false);
-  // const [otpError, setOtpError] = useState('');
-  // const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -48,9 +45,6 @@ const StudentFeedbackForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // if (!emailVerified || !phoneVerified) {
-    //   return alert('Please verify both email and phone number before submitting.');
-    // }
 
     try {
       const submissionRef = doc(db, 'submissions', `${formId}_${email}`);
@@ -76,75 +70,205 @@ const StudentFeedbackForm: React.FC = () => {
     }
   };
 
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center vh-100">
-      <div className="spinner-border" role="status" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-warning" role="status" />
+      </div>
+    );
+  }
 
-  if (!formDetails) return (
-    <div className="alert alert-danger text-center mt-5">
-      Invalid or inactive form link.
-    </div>
-  );
+  if (!formDetails) {
+    return (
+      <div className="alert alert-danger text-center mt-5">
+        Invalid or inactive form link.
+      </div>
+    );
+  }
 
-  if (formSubmitted) return (
-    <div className="alert alert-success text-center mt-5">
-      ✅ Thank you! Your feedback has been submitted.
+  // if (formSubmitted) {
+  //   return (
+  //     <div className="alert alert-success text-center mt-5">
+  //       ✅ Thank you! Your feedback has been submitted.
+  //     </div>
+  //   );
+  // }
+//   if (formSubmitted) {
+//   return (
+//     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+//       <div className="text-center p-4 rounded-4 shadow-sm bg-white border-0" style={{ maxWidth: '600px' }}>
+//         <div className="mb-3">
+//           <div
+//             className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle"
+//             style={{ width: '60px', height: '60px', fontSize: '30px' }}
+//           >
+//             ✓
+//           </div>
+//         </div>
+//         <h4 className="fw-bold text-dark mb-3">Thank you! 🎉</h4>
+//         <p className="text-secondary mb-2">
+//           Your feedback has been successfully submitted.
+//         </p>
+//         <p className="text-secondary mb-4">
+//           Your certificate will be generated and sent shortly to:
+//         </p>
+//         <div className="text-start">
+//           <p className="mb-1"><strong>📧 Email:</strong> {email}</p>
+//           <p className="mb-0"><strong>📱 WhatsApp:</strong> {phone}</p>
+//         </div>
+//         <hr className="my-4" />
+//         <p className="text-muted small">
+//           Please ensure your contact details are correct. For any issues, contact the coordinator.
+//         </p>
+//       </div>
+//     </div>
+//   );
+// }
+if (formSubmitted) {
+  return (
+    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+      <div className="text-center p-5 rounded-4 shadow-sm bg-white border-0" style={{ maxWidth: '600px' }}>
+        <div className="mb-4">
+          <div
+            className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle"
+            style={{ width: '60px', height: '60px', fontSize: '30px' }}
+          >
+            ✓
+          </div>
+        </div>
+        <h4 className="fw-bold text-dark mb-2">Thank you! 🎉</h4>
+        <p className="text-secondary mb-3">
+          Your feedback has been successfully submitted.
+        </p>
+        <p className="text-dark fw-medium mb-4">
+          Your certificate will be generated and sent shortly to your verified:
+        </p>
+
+        <div className="d-flex flex-column align-items-center mb-4">
+          <p className="mb-2">
+            <span className="fw-bold text-dark">📱 WhatsApp:</span>{' '}
+            <span className="text-secondary">{phone}</span>
+          </p>
+          <p className="mb-0">
+            <span className="fw-bold text-dark">📧 Email:</span>{' '}
+            <span className="text-secondary">{email}</span>
+          </p>
+        </div>
+
+        <hr className="my-4" />
+        <p className="text-muted small">
+          Please ensure your contact details are correct. For any issues, contact the coordinator.
+        </p>
+      </div>
     </div>
   );
+}
+
+
 
   return (
-    <div className="container py-5">
-      <div id="recaptcha-container" />
-      <div className="row justify-content-center">
-        <div className="col-12 col-md-10 col-lg-8">
-          <div className="card shadow-lg border-0">
-            <div className="card-body p-4">
-              <h3 className="card-title text-center mb-3">{formDetails.workshopName}</h3>
-              <p><strong>College:</strong> {formDetails.collegeName}</p>
-              <p><strong>Date & Time:</strong> {formDetails.dateTime}</p>
-              <div className="alert alert-info">{formDetails.instructions}</div>
+    <div className="bg-light min-vh-100">
+      {/* Banner */}
+      <div
+        className="w-100 position-relative"
+        style={{
+          height: '220px',
+          backgroundImage: `url(${bannerImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderBottom: '5px solid var(--bs-warning)',
+        }}
+      >
+        <div className="position-absolute translate-middle text-white text-center px-3 top-40 start-50">
+          <h2 className="fw-bold" style={{ textShadow: '1px 1px 4px #000' }}>
+            Please fill out the details to receive your certificate!
+          </h2>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="container" style={{ marginTop: '-90px' }}>
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-10 col-lg-8">
+            shadow-sm border-0
+            <div className="card shadow-sm border-0 p-4 rounded-4 bg-white">
+              <h3 className="text-center fw-bold text-warning mb-3">
+                {formDetails.workshopName}
+              </h3>
+
+              <p className="mb-1">
+                <strong>College:</strong> {formDetails.collegeName}
+              </p>
+              <p className="mb-3">
+                <strong>Date & Time:</strong> {formDetails.dateTime}
+              </p>
+
+              {formDetails.instructions && (
+                <div className="alert alert-info small">{formDetails.instructions}</div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label">Name</label>
-                  <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="mb-3">
                   <label className="form-label">Course</label>
-                  <input type="text" className="form-control" value={course} onChange={(e) => setCourse(e.target.value)} required />
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={course}
+                    onChange={(e) => setCourse(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="mb-3">
                   <label className="form-label">Phone (+91XXXXXXXXXX)</label>
-                  <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  <input
+                    type="tel"
+                    className="form-control"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="mb-3">
                   <label className="form-label">Email</label>
-                  <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
 
-                <div className="mb-3">
+                <div className="mb-4">
                   <label className="form-label">Feedback</label>
-                  <textarea className="form-control" rows={4} value={feedback} onChange={(e) => setFeedback(e.target.value)} required />
+                  <textarea
+                    className="form-control"
+                    rows={4}
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    required
+                  />
                 </div>
-
-                {/* {otpError && <div className="alert alert-danger">{otpError}</div>} */}
 
                 <div className="d-grid">
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    // disabled={!emailVerified || !phoneVerified || otpLoading}
-                  >
+                  <button type="submit" className="btn btn-warning fw-bold">
                     Submit Feedback
                   </button>
                 </div>
               </form>
-
             </div>
           </div>
         </div>

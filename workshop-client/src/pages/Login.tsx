@@ -3,17 +3,20 @@ import { doc, getDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
+import Loader from '../components/Loader';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -27,8 +30,8 @@ const Login: React.FC = () => {
       const userData = userSnap.data();
       if (userData.role !== 'admin') throw new Error('Access denied. Admins only.');
 
-      alert('✅ Login successful as admin!');
-      navigate('/dashboard');
+      setSuccess('✅ Logged in successfully as admin!');
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -37,51 +40,58 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light px-3">
-      <div className="card shadow p-4 w-100" style={{ maxWidth: '400px' }}>
-        <h2 className="text-center mb-4">Admin Login</h2>
+    <>
+      {loading && <Loader />}
+      <div className="login-page">
+        <div className="login-wrapper">
+          <div className="login-card">
+            <h2 className="form-title text-red">Admin Login</h2>
 
-        <form onSubmit={handleLogin} noValidate>
-          <div className="mb-3">
-            <label htmlFor="email" className="form-label">Email address</label>
-            <input
-              type="email"
-              id="email"
-              className="form-control"
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+            <form onSubmit={handleLogin} noValidate>
+              <div className="mb-3">
+                <label htmlFor="email" className="form-label">Email address</label>
+                <input
+                  type="email"
+                  id="email"
+                  className="form-control"
+                  placeholder="Enter email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="password" className="form-label">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  className="form-control"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {error && <div className="alert alert-danger">{error}</div>}
+              {success && <div className="alert alert-success">{success}</div>}
+
+              {/* <button
+                type="submit"
+                className="btn btn-primary w-100"
+                disabled={loading}
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button> */}
+              <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+  Login
+</button>
+            </form>
           </div>
-
-          <div className="mb-3">
-            <label htmlFor="password" className="form-label">Password</label>
-            <input
-              type="password"
-              id="password"
-              className="form-control"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && <div className="alert alert-danger py-2">{error}</div>}
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100"
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import Loader from '../components/Loader';
 
 interface FeedbackData {
   name: string;
@@ -37,46 +38,65 @@ const FormResponses: React.FC = () => {
   }, [id]);
 
   return (
-    <div className="container py-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Form Responses</h2>
-        <Link to="/dashboard" className="btn btn-secondary">← Back to Dashboard</Link>
+    <div className="container-fluid bg-light min-vh-100 py-4 px-3 px-md-5">
+      {/* Header */}
+      <div className="row align-items-center justify-content-between mb-4 bg-dark text-white p-3 rounded shadow-sm">
+        <div className="col-md-auto mb-2 mb-md-0">
+          <h1 className="h5 m-0">📋 Form Responses</h1>
+        </div>
+        <div className="col-md-auto">
+          <Link
+            to="/dashboard"
+            className="btn btn-warning text-dark fw-semibold w-100 w-md-auto"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="text-center">Loading responses...</div>
-      ) : responses.length === 0 ? (
-        <div className="alert alert-warning text-center">No responses yet.</div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered table-striped">
-            <thead className="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Course</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Feedback</th>
-                <th>Submitted At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {responses.map((resp, idx) => (
-                <tr key={idx}>
-                  <td>{idx + 1}</td>
-                  <td>{resp.name}</td>
-                  <td>{resp.course}</td>
-                  <td>{resp.phone}</td>
-                  <td>{resp.email}</td>
-                  <td>{resp.feedback}</td>
-                  <td>{new Date(resp.timestamp.seconds * 1000).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Main Card */}
+      <div className="card shadow-sm border-0">
+        <div className="card-body">
+          {loading ? (
+            <div className="d-flex justify-content-center align-items-center py-5">
+              <Loader />
+            </div>
+          ) : responses.length === 0 ? (
+            <div className="text-center text-muted py-4">
+              No responses found for this form.
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-bordered align-middle text-center">
+                <thead className="table-dark">
+                  <tr>
+                    <th>Name</th>
+                    <th>Course</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Feedback</th>
+                    <th>Submitted At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {responses.map((resp, idx) => (
+                    <tr key={idx}>
+                      <td>{resp.name}</td>
+                      <td>{resp.course}</td>
+                      <td>{resp.phone}</td>
+                      <td>{resp.email}</td>
+                      <td className="text-start">{resp.feedback}</td>
+                      <td className="white-space-nowrap">
+                        {new Date(resp.timestamp.seconds * 1000).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
