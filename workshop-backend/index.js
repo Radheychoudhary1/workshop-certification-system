@@ -1,5 +1,3 @@
-// index.js
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -7,6 +5,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
+const twilio = require("twilio");
 
 const { setOtp, verifyOtp } = require("./otpStore");
 const { db } = require("./firebaseAdmin");
@@ -18,9 +17,7 @@ const PORT = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// =======================
-// Email Transporter Setup
-// =======================
+// Email Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -29,30 +26,30 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// =======================
-// OTP ROUTES
-// =======================
+// Twilio Client
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+// Generate OTP
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
+// =======================
+// OTP Routes
+// =======================
 app.post("/sendEmailOtp", async (req, res) => {
   const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: "Email is required" });
-  }
+  if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
   const otp = generateOtp();
   setOtp(email, otp);
 
-  const mailOptions = {
-    from: `"Your App" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your OTP Code",
-    html: `<p>Your OTP code is <b>${otp}</b>. It will expire in 5 minutes.</p>`,
-  };
-
   try {
-    await transporter.sendMail(mailOptions);
+    await transporter.sendMail({
+      from: `"Your App" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your OTP Code",
+      html: `<p>Your OTP code is <b>${otp}</b>. It will expire in 5 minutes.</p>`,
+    });
     res.json({ success: true, message: "OTP sent successfully" });
   } catch (err) {
     console.error("Error sending OTP:", err);
@@ -62,23 +59,17 @@ app.post("/sendEmailOtp", async (req, res) => {
 
 app.post("/verifyEmailOtp", (req, res) => {
   const { email, otp } = req.body;
-
-  if (!email || !otp) {
-    return res.status(400).json({ success: false, message: "Email and OTP are required" });
-  }
+  if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP are required" });
 
   const result = verifyOtp(email, otp);
-  if (result.success) {
-    res.json({ success: true, message: result.message });
-  } else {
-    res.status(400).json({ success: false, message: result.message });
-  }
+  result.success
+    ? res.json({ success: true, message: result.message })
+    : res.status(400).json({ success: false, message: result.message });
 });
 
 // =======================
-// GENERATE CERTIFICATE + EMAIL
+// Certificate + Email + WhatsApp
 // =======================
-
 app.post("/generate-certificate", async (req, res) => {
   const { name, email, course, phone, formId } = req.body;
 
@@ -94,8 +85,7 @@ app.post("/generate-certificate", async (req, res) => {
       return res.status(404).json({ success: false, message: "Workshop not found" });
     }
 
-    const data = snap.data();
-    const { workshopName, collegeName, dateTime } = data;
+    const { workshopName, collegeName, dateTime } = snap.data();
 
     const outputDir = path.join(__dirname, "certificates");
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
@@ -104,57 +94,57 @@ app.post("/generate-certificate", async (req, res) => {
     const outputPath = path.join(outputDir, filename);
 
     console.log("📄 Generating certificate for:", name);
-    await generateCertificate(
-      {
-        name,
-        course,
-        college: collegeName,
-        workshop: workshopName,
-        date: new Date(dateTime).toDateString(),
-      },
-      outputPath
-    );
+    await generateCertificate({
+      name,
+      course,
+      college: collegeName,
+      workshop: workshopName,
+      date: new Date(dateTime).toDateString(),
+    }, outputPath);
     console.log("✅ Certificate created at:", outputPath);
 
-    // Email body with professional styling
+    // Email with attachment
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; color: #333;">
-        <div style="max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1);">
-          <h2 style="text-align: center; color: #004080;">🎉 Congratulations!</h2>
-          <p>Dear <strong>${name}</strong>,</p>
-          <p>Thank you for participating in the workshop <strong>"${workshopName}"</strong> conducted by <strong>${collegeName}</strong> on <strong>${new Date(dateTime).toDateString()}</strong>.</p>
-          <p>We're thrilled to award you a certificate of participation.</p>
-          <p><strong>📎 Your certificate is attached to this email.</strong></p>
-          <hr style="margin: 30px 0;" />
-          <p style="font-size: 14px; color: #777;">
-            If you have any questions or didn’t receive your certificate correctly, feel free to contact the workshop coordinator.
-          </p>
-          <p style="text-align: center; font-size: 13px; color: #aaa;">© ${new Date().getFullYear()} ${collegeName} | All rights reserved.</p>
-        </div>
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #004080;">🎉 Congratulations, ${name}!</h2>
+        <p>You have successfully completed the <b>${workshopName}</b> workshop at <b>${collegeName}</b>.</p>
+        <p>📎 Your certificate is attached to this email.</p>
+        <p>Best wishes,<br/>Team Workshop</p>
       </div>
     `;
 
     console.log("📧 Sending email to:", email);
-
     await transporter.sendMail({
       from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: `🎓 Your Workshop Certificate from ${collegeName}`,
+      subject: `🎓 Your Certificate from ${collegeName}`,
       html: htmlBody,
-      attachments: [
-        {
-          filename,
-          path: outputPath,
-        },
-      ],
+      attachments: [{ filename, path: outputPath }],
     });
+    console.log("📤 Email sent successfully.");
 
-    console.log("📤 Email sent successfully to:", email);
-    res.json({ success: true, message: "Certificate generated and email sent", filename });
+    // WhatsApp Notification (text only)
+    const whatsappTo = `whatsapp:+91${phone}`;
+    const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready and sent to your email (${email}).\n\nThank you!\n- ${collegeName}`;
+
+    // 🧪 Debug Logs
+    console.log("📲 Sending WhatsApp to:", phone);
+    console.log("Using WhatsApp FROM:", process.env.TWILIO_WHATSAPP_FROM);
+    console.log("Sending TO:", whatsappTo);
+    console.log("Message:", msg);
+
+    await twilioClient.messages.create({
+      from: process.env.TWILIO_WHATSAPP_FROM,
+      to: whatsappTo,
+      body: msg,
+    });
+    console.log("✅ WhatsApp message sent to:", phone);
+
+    res.json({ success: true, message: "Certificate generated, emailed, and WhatsApp sent", filename });
 
   } catch (err) {
-    console.error("❌ Error generating or emailing certificate:", err);
-    res.status(500).json({ success: false, message: "Certificate generation or email failed" });
+    console.error("❌ Error:", err);
+    res.status(500).json({ success: false, message: "Failed to generate/send certificate" });
   }
 });
 
