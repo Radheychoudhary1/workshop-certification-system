@@ -135,8 +135,3 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Ignore secret key file
-workshop-backend/serviceAccountKey.json
-
-# Firebase secret key
-workshop-backend/serviceAccountKey.json.json
