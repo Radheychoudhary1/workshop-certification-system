@@ -26,8 +26,14 @@ const StudentFeedbackForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [feedback, setFeedback] = useState('');
 
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+
   const [showTwilioAlert, setShowTwilioAlert] = useState(false);
   const [twilioAlertShown, setTwilioAlertShown] = useState(false);
+
+  const isFormVerified = emailVerified;
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -46,6 +52,33 @@ const StudentFeedbackForm: React.FC = () => {
     };
     fetchForm();
   }, [formId]);
+
+  const handleSendEmailOtp = async () => {
+    if (!email) return alert('Please enter your email');
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendEmailOtp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setEmailOtpSent(true);
+      alert('OTP sent to email');
+    } else alert(data.message);
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyEmailOtp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp: emailOtp }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setEmailVerified(true);
+      alert('Email verified successfully');
+    } else alert(data.message);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,18 +101,11 @@ const StudentFeedbackForm: React.FC = () => {
         timestamp: new Date(),
       });
 
-      // const res = await fetch('http://localhost:5000/generate-certificate', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ formId, name, course, phone, email }),
-      // });
-      // ✅ Example usage in StudentFeedbackForm.tsx
       const res = await fetch(`${process.env.REACT_APP_API_BASE}/generate-certificate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ formId, name, course, phone, email }),
       });
-
 
       if (!res.ok) {
         const err = await res.json();
@@ -190,7 +216,7 @@ const StudentFeedbackForm: React.FC = () => {
               {showTwilioAlert && (
                 <div className="alert alert-warning alert-dismissible fade show small" role="alert">
                   📲 To receive your certificate via WhatsApp, please send <strong>"join angle-particles"</strong> from the number you entered to{' '}
-                  <strong>+1 415 523 8886</strong>.
+                  <strong>+1 415 523 8886</strong>. If already send this message then please Ignore it.
                   <button
                     type="button"
                     className="btn-close"
@@ -221,13 +247,27 @@ const StudentFeedbackForm: React.FC = () => {
                 <div className="mb-3">
                   <label className="form-label">Email</label>
                   <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
+                  {emailVerified ? (
+                    <span className="text-success small">✅ Verified</span>
+                  ) : (
+                    <div className="d-flex gap-2 mt-2">
+                      {!emailOtpSent ? (
+                        <button type="button" onClick={handleSendEmailOtp} className="btn btn-sm btn-outline-secondary">Send OTP</button>
+                      ) : (
+                        <>
+                          <input className="form-control form-control-sm" placeholder="Enter OTP" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} />
+                          <button type="button" onClick={handleVerifyEmailOtp} className="btn btn-sm btn-outline-success">Verify</button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="mb-4">
                   <label className="form-label">Feedback</label>
                   <textarea className="form-control" rows={4} value={feedback} onChange={e => setFeedback(e.target.value)} required />
                 </div>
                 <div className="d-grid">
-                  <button type="submit" className="btn btn-warning fw-bold" disabled={submitting}>
+                  <button type="submit" className="btn btn-warning fw-bold" disabled={!isFormVerified || submitting}>
                     {submitting ? 'Submitting...' : 'Submit Feedback'}
                   </button>
                 </div>
