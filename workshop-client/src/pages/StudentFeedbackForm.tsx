@@ -26,6 +26,9 @@ const StudentFeedbackForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [feedback, setFeedback] = useState('');
 
+  const [showTwilioAlert, setShowTwilioAlert] = useState(false);
+  const [twilioAlertShown, setTwilioAlertShown] = useState(false);
+
   useEffect(() => {
     const fetchForm = async () => {
       if (!formId) return setLoading(false);
@@ -55,7 +58,6 @@ const StudentFeedbackForm: React.FC = () => {
         return;
       }
 
-      // 1. Save feedback
       await setDoc(submissionRef, {
         formId,
         name,
@@ -66,7 +68,6 @@ const StudentFeedbackForm: React.FC = () => {
         timestamp: new Date(),
       });
 
-      // 2. Trigger backend to generate certificate
       const res = await fetch('http://localhost:5000/generate-certificate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +85,14 @@ const StudentFeedbackForm: React.FC = () => {
       alert('Failed to submit feedback or generate certificate. Please try again.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(e.target.value);
+    if (!twilioAlertShown && e.target.value.trim().length >= 10) {
+      setShowTwilioAlert(true);
+      setTwilioAlertShown(true);
     }
   };
 
@@ -143,7 +152,6 @@ const StudentFeedbackForm: React.FC = () => {
 
   return (
     <div className="bg-light min-vh-100">
-      {/* Banner */}
       <div
         className="w-100 position-relative"
         style={{
@@ -161,7 +169,6 @@ const StudentFeedbackForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Form */}
       <div className="container" style={{ marginTop: '-90px' }}>
         <div className="row justify-content-center">
           <div className="col-12 col-md-10 col-lg-8">
@@ -172,6 +179,19 @@ const StudentFeedbackForm: React.FC = () => {
               {formDetails.instructions && (
                 <div className="alert alert-info small">{formDetails.instructions}</div>
               )}
+
+              {showTwilioAlert && (
+                <div className="alert alert-warning alert-dismissible fade show small" role="alert">
+                  📲 To receive your certificate via WhatsApp, please send <strong>"join angle-particles"</strong> from the number you entered to{' '}
+                  <strong>+1 415 523 8886</strong>.
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowTwilioAlert(false)}
+                  />
+                </div>
+              )}
+
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label">Name</label>
@@ -183,7 +203,13 @@ const StudentFeedbackForm: React.FC = () => {
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Phone (+91XXXXXXXXXX)</label>
-                  <input type="tel" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} required />
+                  <input
+                    type="tel"
+                    className="form-control"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    required
+                  />
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Email</label>
@@ -199,6 +225,7 @@ const StudentFeedbackForm: React.FC = () => {
                   </button>
                 </div>
               </form>
+
             </div>
           </div>
         </div>
