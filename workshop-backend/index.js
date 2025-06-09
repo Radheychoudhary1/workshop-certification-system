@@ -18,6 +18,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// ✅ Serve the certificates folder statically
+app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
+
 // Email Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
