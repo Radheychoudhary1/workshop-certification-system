@@ -93,6 +93,8 @@ app.post("/generate-certificate", async (req, res) => {
 
     const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}.pdf`;
     const outputPath = path.join(outputDir, filename);
+    const backendBaseURL = process.env.BACKEND_PUBLIC_URL; // Replace with your actual Render backend URL
+    const certificateLink = `${backendBaseURL}/certificates/${filename}`;
 
     console.log("📄 Generating certificate for:", name);
     await generateCertificate({
@@ -126,7 +128,8 @@ app.post("/generate-certificate", async (req, res) => {
 
     // WhatsApp Notification (text only)
     const whatsappTo = `whatsapp:+91${phone}`;
-    const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready and sent to your email (${email}).\n\nThank you!\n- ${collegeName}`;
+    // const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready and sent to your email (${email}).\n\nThank you!\n- ${collegeName}`;
+    const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready.\n\n📩 Sent to: ${email}\n📄 Download: ${certificateLink}\n\nThank you!\n- ${collegeName}`;
 
     // 🧪 Debug Logs
     console.log("📲 Sending WhatsApp to:", phone);
