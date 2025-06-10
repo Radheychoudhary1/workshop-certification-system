@@ -1,10 +1,10 @@
 // src/pages/StudentFeedbackForm.tsx
 
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import bannerImage from '../assets/images/page-banner.jpg';
+import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import bannerImage from '../assets/images/login-bg.jpg';
 
 interface FormData {
   collegeName: string;
