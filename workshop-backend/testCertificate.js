@@ -17,7 +17,7 @@ async function run() {
     const submission = snapshot.docs[0].data();
     const { name, email, course, phone, feedback, formId } = submission;
 
-    console.log(`📥 Found submission from ${name} (${email})`);
+    console.log(`Found submission from ${name} (${email})`);
 
     // Step 2: Fetch workshop data using formId
     const workshopRef = db.collection('workshops').doc(formId);
