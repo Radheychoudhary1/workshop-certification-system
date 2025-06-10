@@ -30,6 +30,7 @@ const StudentFeedbackForm: React.FC = () => {
   const [emailOtp, setEmailOtp] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'verifying' | 'verified'>('idle');
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
 
   const [showTwilioAlert, setShowTwilioAlert] = useState(false);
@@ -56,7 +57,7 @@ const StudentFeedbackForm: React.FC = () => {
   }, [formId]);
 
 const handleSendEmailOtp = async () => {
-  if (!email) return;
+  if (!email || cooldownSeconds > 0) return;
   setEmailStatus('sending');
   try {
     const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendEmailOtp`, {
@@ -67,6 +68,7 @@ const handleSendEmailOtp = async () => {
     const data = await res.json();
     if (data.success) {
       setEmailOtpSent(true);
+      setCooldownSeconds(30); // 30-second cooldown
     }
   } catch (err) {
     console.error('Error sending OTP:', err);
@@ -74,6 +76,17 @@ const handleSendEmailOtp = async () => {
     setEmailStatus('idle');
   }
 };
+
+useEffect(() => {
+  let interval: NodeJS.Timeout;
+  if (cooldownSeconds > 0) {
+    interval = setInterval(() => {
+      setCooldownSeconds((prev) => prev - 1);
+    }, 1000);
+  }
+  return () => clearInterval(interval);
+}, [cooldownSeconds]);
+
 
 const handleVerifyEmailOtp = async () => {
   setEmailStatus('verifying');
@@ -277,13 +290,18 @@ const handleVerifyEmailOtp = async () => {
     <div className="d-flex gap-2 mt-2">
       {!emailOtpSent ? (
         <button
-          type="button"
-          onClick={handleSendEmailOtp}
-          className="btn btn-secondary btn-sm"
-          disabled={emailStatus === 'sending'}
-        >
-          {emailStatus === 'sending' ? 'Sending...' : 'Send OTP'}
-        </button>
+  type="button"
+  onClick={handleSendEmailOtp}
+  className="btn btn-secondary btn-sm"
+  disabled={emailStatus === 'sending' || cooldownSeconds > 0}
+>
+  {emailStatus === 'sending'
+    ? 'Sending...'
+    : cooldownSeconds > 0
+    ? `Resend in ${cooldownSeconds}s`
+    : 'Send OTP'}
+</button>
+
       ) : (
         <>
           <input
