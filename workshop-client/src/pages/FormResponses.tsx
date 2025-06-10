@@ -40,11 +40,10 @@ const FormResponses: React.FC = () => {
   return (
     <div className="container-fluid bg-light min-vh-100 py-4 px-3 px-md-5">
       {/* Header */}
-      <div className="row align-items-center justify-content-between mb-4 bg-dark text-white p-3 rounded shadow-sm">
-        <div className="col-md-auto mb-2 mb-md-0">
-          <h1 className="h5 m-0">📋 Form Responses</h1>
-        </div>
-        <div className="col-md-auto">
+
+      <div className="d-flex justify-content-between align-items-center mb-4 bg-dark text-white p-3 rounded shadow-sm">
+        <h1 className="h4 m-0">📋 Form Responses</h1>
+        <div>
           <Link
             to="/dashboard"
             className="btn btn-warning text-dark fw-semibold w-100 w-md-auto"

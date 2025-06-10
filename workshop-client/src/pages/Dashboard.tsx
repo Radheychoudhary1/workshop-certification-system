@@ -1,17 +1,20 @@
-// src/pages/Dashboard.tsx
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import Pagination from '../components/Pagination';
+import { auth, db } from '../firebase';
 
 interface FormData {
   id: string;
   collegeName: string;
   workshopName: string;
   dateTime: string;
+  active: boolean;
+  linkId: string;
+  responsesCount: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -20,6 +23,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 6;
 
   const performLogout = async () => {
@@ -27,28 +31,86 @@ const Dashboard: React.FC = () => {
     navigate('/');
   };
 
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
+  const handleLogoutClick = () => setShowLogoutConfirm(true);
+  const handleCancelLogout = () => setShowLogoutConfirm(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+
+  const handleCopyLink = (link: string, id?: string) => {
+    navigator.clipboard.writeText(link);
+    setCopiedLinkId(id || null);
+    toast.success('Feedback link copied!');
+    setTimeout(() => setCopiedLinkId(null), 2000); // Reset after 2 seconds
   };
 
-  const handleCancelLogout = () => {
-    setShowLogoutConfirm(false);
+
+  const fetchResponseCount = async (formId: string) => {
+    const responsesRef = collection(db, 'workshops', formId, 'responses');
+    const snapshot = await getDocs(responsesRef);
+    return snapshot.size;
   };
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  const exportToCSV = async (formId: string) => {
+    try {
+      setExportingId(formId);
+      const responsesRef = collection(db, 'workshops', formId, 'responses');
+      const snapshot = await getDocs(responsesRef);
+
+      if (snapshot.empty) {
+        toast.info('No submissions to export.');
+        return;
+      }
+
+      const csvRows: string[] = [];
+      const headers = ['Rating', 'Suggestion', 'Submitted At'];
+      csvRows.push(headers.join(','));
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const row = [
+          `"${data.rating}"`,
+          `"${data.suggestion}"`,
+          `"${data.submittedAt?.toDate?.().toLocaleString() || ''}"`,
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `workshop_${formId}_responses.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Failed to export CSV.');
+    } finally {
+      setExportingId(null);
+    }
+  };
+
 
   useEffect(() => {
     const fetchForms = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'workshops'));
         const fetchedForms: FormData[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
+
+        for (const docSnap of querySnapshot.docs) {
+          const data = docSnap.data();
+          const responsesCount = await fetchResponseCount(docSnap.id);
           fetchedForms.push({
-            id: doc.id,
+            id: docSnap.id,
             collegeName: data.collegeName,
             workshopName: data.workshopName,
             dateTime: data.dateTime,
+            active: data.active || false,
+            linkId: data.linkId || '',
+            responsesCount,
           });
-        });
+        }
         setForms(fetchedForms);
       } catch (error) {
         console.error("Error fetching forms:", error);
@@ -60,11 +122,16 @@ const Dashboard: React.FC = () => {
     fetchForms();
   }, []);
 
-  const paginatedForms = forms.slice(
+  const filteredForms = forms.filter((form) =>
+    form.workshopName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    form.collegeName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const paginatedForms = filteredForms.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  const totalPages = Math.ceil(forms.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredForms.length / itemsPerPage);
 
   return (
     <div className="dashboard container-fluid bg-light min-vh-100 py-4 px-3 px-md-5">
@@ -76,7 +143,7 @@ const Dashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Modal */}
       {showLogoutConfirm && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -100,23 +167,34 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Main Card */}
       <div className="card shadow-sm border-0">
         <div className="card-body">
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-            <h2 className="h5 fw-bold text-dark mb-2 mb-md-0">All Workshops</h2>
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+            <h2 className="h5 fw-bold text-dark mb-0">All Workshops</h2>
             <Link to="/dashboard/create" className="btn btn-dark text-warning fw-semibold">
               + Create New Form
             </Link>
           </div>
 
+          {/* Search */}
+          <div className="mb-4">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search by workshop or college..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Cards */}
           {loading ? (
             <div className="d-flex justify-content-center align-items-center py-5">
               <Loader />
             </div>
-          ) : forms.length === 0 ? (
+          ) : filteredForms.length === 0 ? (
             <div className="text-center text-muted py-4">
-              No forms created yet. Start by clicking <strong>“Create New Form”</strong>.
+              No matching workshops found.
             </div>
           ) : (
             <>
@@ -124,23 +202,78 @@ const Dashboard: React.FC = () => {
                 {paginatedForms.map((form) => (
                   <div className="col-12 col-md-6 col-lg-4 mb-4" key={form.id}>
                     <div className="card h-100 shadow-sm border-start border-4 border-warning">
-                      <div className="card-body">
-                        <h5 className="card-title text-dark">{form.workshopName}</h5>
+                      <div className="card-body d-flex flex-column">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <h5 className="card-title text-dark mb-0">{form.workshopName}</h5>
+                          <span className={`badge rounded-pill ${form.active ? 'bg-success' : 'bg-secondary'}`}>
+                            {form.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                         <p className="mb-1"><strong>College:</strong> {form.collegeName}</p>
-                        <p className="mb-2"><strong>Date & Time:</strong> {form.dateTime}</p>
-                        <Link
-                          to={`/dashboard/form/${form.id}`}
-                          className="btn btn-sm btn-outline-warning fw-semibold"
-                        >
-                          View Responses
-                        </Link>
+                        <p className="mb-1"><strong>Date & Time:</strong> {form.dateTime}</p>
+                        <p className="mb-2"><strong>Responses:</strong> {form.responsesCount}</p>
+
+                        {/* Link Area */}
+                        {form.active && form.linkId ? (
+                          <div className="input-group input-group-sm mb-2">
+                            <input
+                              type="text"
+                              className="form-control"
+                              readOnly
+                              value={`${window.location.origin}/form/${form.id}`}
+                            />
+                            {/* <button
+                              className="btn btn-outline-dark"
+                              onClick={() =>
+                                handleCopyLink(`${window.location.origin}/form/${form.id}`)
+                              }
+                            >
+                              Copy Link
+                            </button> */}
+                            <button
+                              className="btn btn-outline-dark"
+                              onClick={() =>
+                                handleCopyLink(`${window.location.origin}/form/${form.id}`, form.id)
+                              }
+                            >
+                              {copiedLinkId === form.id ? 'Copied' : 'Copy Link'}
+                            </button>
+
+
+                          </div>
+                        ) : (
+                          <p className="text-muted small mb-2">Link not available (Inactive)</p>
+                        )}
+
+                        <div className="d-flex gap-2 mt-auto">
+                          <Link
+                            to={`/dashboard/form/${form.id}`}
+                            className="btn btn-sm btn-outline-warning fw-semibold w-100"
+                          >
+                            View Responses
+                          </Link>
+                          {/* <button
+                            className="btn btn-sm btn-outline-primary w-100"
+                            onClick={() => exportToCSV(form.id)}
+                          >
+                            Export CSV
+                          </button> */}
+                          <button
+                            className="btn btn-sm btn-outline-primary w-100"
+                            disabled={exportingId === form.id || form.responsesCount === 0}
+                            onClick={() => exportToCSV(form.id)}
+                          >
+                            {exportingId === form.id ? 'Exporting...' : 'Export CSV'}
+                          </button>
+
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {forms.length > itemsPerPage && (
+              {filteredForms.length > itemsPerPage && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}

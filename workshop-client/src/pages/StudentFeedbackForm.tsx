@@ -29,6 +29,8 @@ const StudentFeedbackForm: React.FC = () => {
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtp, setEmailOtp] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'verifying' | 'verified'>('idle');
+
 
   const [showTwilioAlert, setShowTwilioAlert] = useState(false);
   const [twilioAlertShown, setTwilioAlertShown] = useState(false);
@@ -53,8 +55,10 @@ const StudentFeedbackForm: React.FC = () => {
     fetchForm();
   }, [formId]);
 
-  const handleSendEmailOtp = async () => {
-    if (!email) return alert('Please enter your email');
+const handleSendEmailOtp = async () => {
+  if (!email) return;
+  setEmailStatus('sending');
+  try {
     const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendEmailOtp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,11 +67,17 @@ const StudentFeedbackForm: React.FC = () => {
     const data = await res.json();
     if (data.success) {
       setEmailOtpSent(true);
-      alert('OTP sent to email');
-    } else alert(data.message);
-  };
+    }
+  } catch (err) {
+    console.error('Error sending OTP:', err);
+  } finally {
+    setEmailStatus('idle');
+  }
+};
 
-  const handleVerifyEmailOtp = async () => {
+const handleVerifyEmailOtp = async () => {
+  setEmailStatus('verifying');
+  try {
     const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyEmailOtp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -76,9 +86,15 @@ const StudentFeedbackForm: React.FC = () => {
     const data = await res.json();
     if (data.success) {
       setEmailVerified(true);
-      alert('Email verified successfully');
-    } else alert(data.message);
-  };
+      setEmailStatus('verified');
+    }
+  } catch (err) {
+    console.error('Error verifying OTP:', err);
+  } finally {
+    if (emailStatus !== 'verified') setEmailStatus('idle');
+  }
+};
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,16 +212,19 @@ const StudentFeedbackForm: React.FC = () => {
         }}
       >
         <div className="position-absolute translate-middle text-white text-center px-3 top-40 start-50">
-          <h2 className="fw-bold" style={{ textShadow: '1px 1px 4px #000' }}>
-            Please fill out the details to receive your certificate!
+          <h2 className="fw-semibold" style={{ textShadow: '1px 1px 4px #000' }}>
+            Feedback Form
           </h2>
         </div>
       </div>
 
-      <div className="container" style={{ marginTop: '-90px' }}>
+      <div className="container-fluid" style={{ marginTop: '-90px' }}>
         <div className="row justify-content-center">
           <div className="col-12 col-md-10 col-lg-8">
             <div className="card shadow-sm border-0 p-4 rounded-4 bg-white">
+              <h2 className="fw-semibold">
+                Please fill out the details to receive your certificate!
+              </h2>
               <h3 className="text-center fw-bold text-warning mb-3">{formDetails.workshopName}</h3>
               <p className="mb-1"><strong>College:</strong> {formDetails.collegeName}</p>
               <p className="mb-3"><strong>Date & Time:</strong> {formDetails.dateTime}</p>
@@ -235,7 +254,7 @@ const StudentFeedbackForm: React.FC = () => {
                   <input type="text" className="form-control" value={course} onChange={e => setCourse(e.target.value)} required />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Phone (+91XXXXXXXXXX)</label>
+                  <label className="form-label">Phone</label>
                   <input
                     type="tel"
                     className="form-control"
@@ -245,23 +264,54 @@ const StudentFeedbackForm: React.FC = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Email</label>
-                  <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
-                  {emailVerified ? (
-                    <span className="text-success small">✅ Verified</span>
-                  ) : (
-                    <div className="d-flex gap-2 mt-2">
-                      {!emailOtpSent ? (
-                        <button type="button" onClick={handleSendEmailOtp} className="btn btn-sm btn-outline-secondary">Send OTP</button>
-                      ) : (
-                        <>
-                          <input className="form-control form-control-sm" placeholder="Enter OTP" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} />
-                          <button type="button" onClick={handleVerifyEmailOtp} className="btn btn-sm btn-outline-success">Verify</button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
+  <label className="form-label">Email</label>
+  <input
+    type="email"
+    className="form-control"
+    placeholder="Enter your email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    required
+  />
+  {!emailVerified && (
+    <div className="d-flex gap-2 mt-2">
+      {!emailOtpSent ? (
+        <button
+          type="button"
+          onClick={handleSendEmailOtp}
+          className="btn btn-secondary btn-sm"
+          disabled={emailStatus === 'sending'}
+        >
+          {emailStatus === 'sending' ? 'Sending...' : 'Send OTP'}
+        </button>
+      ) : (
+        <>
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            placeholder="Enter OTP"
+            value={emailOtp}
+            onChange={(e) => setEmailOtp(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={handleVerifyEmailOtp}
+            className={`btn btn-sm ${emailStatus === 'verified' ? 'btn-success' : 'btn-secondary'}`}
+            disabled={emailStatus === 'verifying' || emailStatus === 'verified'}
+          >
+            {emailStatus === 'verifying'
+              ? 'Verifying...'
+              : emailStatus === 'verified'
+              ? 'Verified ✅'
+              : 'Verify OTP'}
+          </button>
+        </>
+      )}
+    </div>
+  )}
+  {emailVerified && <p className="text-success small mt-1">✅ Email Verified</p>}
+</div>
+
                 <div className="mb-4">
                   <label className="form-label">Feedback</label>
                   <textarea className="form-control" rows={4} value={feedback} onChange={e => setFeedback(e.target.value)} required />
