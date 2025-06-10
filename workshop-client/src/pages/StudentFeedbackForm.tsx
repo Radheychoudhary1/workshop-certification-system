@@ -1,10 +1,10 @@
 // src/pages/StudentFeedbackForm.tsx
 
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getDoc, doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import bannerImage from '../assets/images/login-bg.jpg';
+import { db } from '../firebase';
 
 interface FormData {
   collegeName: string;
@@ -25,10 +25,6 @@ const StudentFeedbackForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [feedback, setFeedback] = useState('');
-
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-const [phoneOtp, setPhoneOtp] = useState('');
-const [phoneVerified, setPhoneVerified] = useState(false);
 
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtp, setEmailOtp] = useState('');
@@ -56,33 +52,6 @@ const [phoneVerified, setPhoneVerified] = useState(false);
     };
     fetchForm();
   }, [formId]);
-
-  const handleSendPhoneOtp = async () => {
-  if (!phone) return alert('Please enter your phone number');
-  const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendPhoneOtp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone }),
-  });
-  const data = await res.json();
-  if (data.success) {
-    setPhoneOtpSent(true);
-    alert('OTP sent to phone via WhatsApp');
-  } else alert(data.message);
-};
-
-const handleVerifyPhoneOtp = async () => {
-  const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyPhoneOtp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, otp: phoneOtp }),
-  });
-  const data = await res.json();
-  if (data.success) {
-    setPhoneVerified(true);
-    alert('Phone number verified');
-  } else alert(data.message);
-};
 
   const handleSendEmailOtp = async () => {
     if (!email) return alert('Please enter your email');
@@ -265,7 +234,7 @@ const handleVerifyPhoneOtp = async () => {
                   <label className="form-label">Course</label>
                   <input type="text" className="form-control" value={course} onChange={e => setCourse(e.target.value)} required />
                 </div>
-                {/* <div className="mb-3">
+                <div className="mb-3">
                   <label className="form-label">Phone (+91XXXXXXXXXX)</label>
                   <input
                     type="tel"
@@ -274,32 +243,7 @@ const handleVerifyPhoneOtp = async () => {
                     onChange={handlePhoneChange}
                     required
                   />
-                </div> */}
-                <div className="mb-3">
-  <label className="form-label">Phone (+91XXXXXXXXXX)</label>
-  <input
-    type="tel"
-    className="form-control"
-    value={phone}
-    onChange={handlePhoneChange}
-    required
-  />
-  {phoneVerified ? (
-    <div className="text-success small mt-1">✅ Verified</div>
-  ) : (
-    <div className="d-flex gap-2 mt-2">
-      {!phoneOtpSent ? (
-        <button type="button" onClick={handleSendPhoneOtp} className="btn btn-sm btn-outline-secondary">Send OTP</button>
-      ) : (
-        <>
-          <input className="form-control form-control-sm" placeholder="Enter OTP" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} />
-          <button type="button" onClick={handleVerifyPhoneOtp} className="btn btn-sm btn-outline-success">Verify</button>
-        </>
-      )}
-    </div>
-  )}
-</div>
-
+                </div>
                 <div className="mb-3">
                   <label className="form-label">Email</label>
                   <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
@@ -323,17 +267,9 @@ const handleVerifyPhoneOtp = async () => {
                   <textarea className="form-control" rows={4} value={feedback} onChange={e => setFeedback(e.target.value)} required />
                 </div>
                 <div className="d-grid">
-                  {/* <button type="submit" className="btn btn-warning fw-bold" disabled={!isFormVerified || submitting}>
-                    {submitting ? 'Submitting...' : 'Submit Feedback'}
-                  </button> */}
-                  <button
-                    type="submit"
-                    className="btn btn-warning fw-bold"
-                    disabled={!emailVerified || !phoneVerified || submitting}
-                  >
+                  <button type="submit" className="btn btn-warning fw-bold" disabled={!isFormVerified || submitting}>
                     {submitting ? 'Submitting...' : 'Submit Feedback'}
                   </button>
-
                 </div>
               </form>
 

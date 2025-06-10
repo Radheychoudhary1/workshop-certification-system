@@ -70,37 +70,6 @@ app.post("/verifyEmailOtp", (req, res) => {
     ? res.json({ success: true, message: result.message })
     : res.status(400).json({ success: false, message: result.message });
 });
-// Add to index.js (backend)
-app.post("/sendPhoneOtp", async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) return res.status(400).json({ success: false, message: "Phone number is required" });
-
-  const otp = generateOtp();
-  setOtp(phone, otp);
-
-  try {
-    const msg = `🔐 Your OTP code is ${otp}. It will expire in 5 minutes.`;
-    await twilioClient.messages.create({
-      from: process.env.TWILIO_WHATSAPP_FROM, // e.g., 'whatsapp:+14155238886'
-      to: `whatsapp:+91${phone}`,
-      body: msg,
-    });
-    res.json({ success: true, message: "OTP sent to phone via WhatsApp" });
-  } catch (err) {
-    console.error("Twilio error:", err);
-    res.status(500).json({ success: false, message: "Failed to send OTP" });
-  }
-});
-
-app.post("/verifyPhoneOtp", (req, res) => {
-  const { phone, otp } = req.body;
-  if (!phone || !otp) return res.status(400).json({ success: false, message: "Phone and OTP are required" });
-
-  const result = verifyOtp(phone, otp);
-  result.success
-    ? res.json({ success: true, message: result.message })
-    : res.status(400).json({ success: false, message: result.message });
-});
 
 // =======================
 // Certificate + Email + WhatsApp
