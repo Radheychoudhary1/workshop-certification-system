@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import bannerImage from '../assets/images/login-bg.jpg';
+import bannerImage from '../assets/images/page-banner.jpg';
 
 interface FormData {
   collegeName: string;
@@ -25,6 +25,10 @@ const StudentFeedbackForm: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [feedback, setFeedback] = useState('');
+
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+const [phoneOtp, setPhoneOtp] = useState('');
+const [phoneVerified, setPhoneVerified] = useState(false);
 
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtp, setEmailOtp] = useState('');
@@ -52,6 +56,49 @@ const StudentFeedbackForm: React.FC = () => {
     };
     fetchForm();
   }, [formId]);
+
+const handleSendPhoneOtp = async () => {
+  if (!phone) return alert('Please enter your phone number');
+
+  const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
+  console.log("📲 Sending phone OTP to:", formattedPhone);
+
+  try {
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendPhoneOtp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: formattedPhone.replace('+', '') }), // pass without "+"
+    });
+
+    const data = await res.json();
+    console.log("📥 OTP Response:", data);
+
+    if (data.success) {
+      setPhoneOtpSent(true);
+      alert('OTP sent to phone via WhatsApp');
+    } else {
+      alert(data.message || 'Failed to send OTP');
+    }
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
+    alert('Request failed. See console.');
+  }
+};
+
+
+
+const handleVerifyPhoneOtp = async () => {
+  const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyPhoneOtp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, otp: phoneOtp }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    setPhoneVerified(true);
+    alert('Phone number verified');
+  } else alert(data.message);
+};
 
   const handleSendEmailOtp = async () => {
     if (!email) return alert('Please enter your email');
@@ -234,7 +281,7 @@ const StudentFeedbackForm: React.FC = () => {
                   <label className="form-label">Course</label>
                   <input type="text" className="form-control" value={course} onChange={e => setCourse(e.target.value)} required />
                 </div>
-                <div className="mb-3">
+                {/* <div className="mb-3">
                   <label className="form-label">Phone (+91XXXXXXXXXX)</label>
                   <input
                     type="tel"
@@ -243,7 +290,32 @@ const StudentFeedbackForm: React.FC = () => {
                     onChange={handlePhoneChange}
                     required
                   />
-                </div>
+                </div> */}
+                <div className="mb-3">
+  <label className="form-label">Phone (+91XXXXXXXXXX)</label>
+  <input
+    type="tel"
+    className="form-control"
+    value={phone}
+    onChange={handlePhoneChange}
+    required
+  />
+  {phoneVerified ? (
+    <div className="text-success small mt-1">✅ Verified</div>
+  ) : (
+    <div className="d-flex gap-2 mt-2">
+      {!phoneOtpSent ? (
+        <button type="button" onClick={handleSendPhoneOtp} className="btn btn-sm btn-outline-secondary">Send OTP</button>
+      ) : (
+        <>
+          <input className="form-control form-control-sm" placeholder="Enter OTP" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} />
+          <button type="button" onClick={handleVerifyPhoneOtp} className="btn btn-sm btn-outline-success">Verify</button>
+        </>
+      )}
+    </div>
+  )}
+</div>
+
                 <div className="mb-3">
                   <label className="form-label">Email</label>
                   <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
@@ -267,9 +339,17 @@ const StudentFeedbackForm: React.FC = () => {
                   <textarea className="form-control" rows={4} value={feedback} onChange={e => setFeedback(e.target.value)} required />
                 </div>
                 <div className="d-grid">
-                  <button type="submit" className="btn btn-warning fw-bold" disabled={!isFormVerified || submitting}>
+                  {/* <button type="submit" className="btn btn-warning fw-bold" disabled={!isFormVerified || submitting}>
+                    {submitting ? 'Submitting...' : 'Submit Feedback'}
+                  </button> */}
+                  <button
+                    type="submit"
+                    className="btn btn-warning fw-bold"
+                    disabled={!emailVerified || !phoneVerified || submitting}
+                  >
                     {submitting ? 'Submitting...' : 'Submit Feedback'}
                   </button>
+
                 </div>
               </form>
 
