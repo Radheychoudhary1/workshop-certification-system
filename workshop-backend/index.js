@@ -17,10 +17,8 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Serve the certificates folder statically
 app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
 
-// Email Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -29,14 +27,12 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Twilio Client
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// Generate OTP
+// Email OTP
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-// OTP Routes
 app.post("/sendEmailOtp", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: "Email is required" });
@@ -68,9 +64,14 @@ app.post("/verifyEmailOtp", (req, res) => {
     : res.status(400).json({ success: false, message: result.message });
 });
 
-// Certificate + Email + WhatsApp
+// ✅ Certificate Generation
 app.post("/generate-certificate", async (req, res) => {
   const { name, email, course, phone, formId } = req.body;
+  const snap = await db.collection("workshops").doc(formId).get();
+if (!snap.exists) {
+  return res.status(404).json({ error: "Workshop not found" });
+}
+const data = snap.data();
 
   if (!formId || !email || !name || !course) {
     return res.status(400).json({ success: false, message: "Missing fields" });
@@ -91,71 +92,87 @@ app.post("/generate-certificate", async (req, res) => {
 
     const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}.pdf`;
     const outputPath = path.join(outputDir, filename);
-    const backendBaseURL = process.env.BACKEND_PUBLIC_URL; // Replace with your actual Render backend URL
+    const backendBaseURL = process.env.BACKEND_PUBLIC_URL;
     const certificateLink = `${backendBaseURL}/certificates/${filename}`;
 
-    console.log("📄 Generating certificate for:", name);
-    await generateCertificate({
-      name,
-      course,
-      college: collegeName,
-      workshop: workshopName,
-      date: new Date(dateTime).toDateString(),
-    }, outputPath);
-    console.log("Certificate created at:", outputPath);
+    // ✅ 1. Generate Certificate
+    try {
+      console.log("📄 Generating certificate for:", name);
+      await generateCertificate(
+        {
+          name,
+          course,
+          college: collegeName,
+          workshop: workshopName,
+          date: new Date(dateTime).toDateString(),
+        },
+        outputPath
+      );
+      console.log("✅ Certificate created:", outputPath);
+    } catch (pdfErr) {
+      console.error("❌ Failed to generate certificate PDF:", pdfErr);
+      return res.status(500).json({ success: false, message: "Error generating PDF" });
+    }
 
-    // Email with attachment
-    const htmlBody = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2 style="color: #004080;">🎉 Congratulations, ${name}!</h2>
-        <p>You have successfully completed the <b>${workshopName}</b> workshop at <b>${collegeName}</b>.</p>
-        <p>📎 Your certificate is attached to this email.</p>
-        <p>Best wishes,<br/>Team Workshop</p>
-      </div>
-    `;
+    // ✅ 2. Send Email with Attachment
+    try {
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color: #004080;">🎉 Congratulations, ${name}!</h2>
+          <p>You have successfully completed the <b>${workshopName}</b> workshop at <b>${collegeName}</b>.</p>
+          <p>📎 Your certificate is attached to this email.</p>
+          <p>Best wishes,<br/>Team Workshop</p>
+        </div>
+      `;
 
-    console.log("📧 Sending email to:", email);
-    await transporter.sendMail({
-      from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: `🎓 Your Certificate from ${collegeName}`,
-      html: htmlBody,
-      attachments: [{ filename, path: outputPath }],
+      console.log("📧 Sending email to:", email);
+      await transporter.sendMail({
+        from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: `🎓 Your Certificate from ${collegeName}`,
+        html: htmlBody,
+        attachments: [{ filename, path: outputPath }],
+      });
+      console.log("✅ Email sent.");
+    } catch (emailErr) {
+      console.error("❌ Failed to send email:", emailErr);
+      return res.status(500).json({ success: false, message: "Error sending email" });
+    }
+
+    // ✅ 3. Send WhatsApp Message
+    try {
+      const whatsappTo = `whatsapp:+91${phone}`;
+      const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready.\n\n📩 Sent to: ${email}\n📄 Download: ${certificateLink}\n\nThank you!\n- ${collegeName}`;
+
+      console.log("📲 Sending WhatsApp to:", whatsappTo);
+      await twilioClient.messages.create({
+        from: process.env.TWILIO_WHATSAPP_FROM,
+        to: whatsappTo,
+        body: msg,
+      });
+      console.log("✅ WhatsApp sent.");
+    } catch (waErr) {
+      console.error("❌ Failed to send WhatsApp:", waErr);
+      return res.status(500).json({ success: false, message: "Error sending WhatsApp message" });
+    }
+
+    res.json({
+      success: true,
+      message: "Certificate generated, emailed, and WhatsApp sent",
+      filename,
     });
-    console.log("📤 Email sent successfully.");
-
-    // WhatsApp Notification (text only)
-    const whatsappTo = `whatsapp:+91${phone}`;
-    // const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready and sent to your email (${email}).\n\nThank you!\n- ${collegeName}`;
-    const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready.\n\n📩 Sent to: ${email}\n📄 Download: ${certificateLink}\n\nThank you!\n- ${collegeName}`;
-
-    // 🧪 Debug Logs
-    console.log("📲 Sending WhatsApp to:", phone);
-    console.log("Using WhatsApp FROM:", process.env.TWILIO_WHATSAPP_FROM);
-    console.log("Sending TO:", whatsappTo);
-    console.log("Message:", msg);
-
-    await twilioClient.messages.create({
-      from: process.env.TWILIO_WHATSAPP_FROM,
-      to: whatsappTo,
-      body: msg,
-    });
-    console.log("WhatsApp message sent to:", phone);
-
-    res.json({ success: true, message: "Certificate generated, emailed, and WhatsApp sent", filename });
-
   } catch (err) {
-    console.error("Error:", err);
+    console.error("🔥 General Error:", err);
     res.status(500).json({ success: false, message: "Failed to generate/send certificate" });
   }
 });
 
-// =======================
+// =========================
 
 app.get("/api/test", (req, res) => {
   res.json({ success: true, message: "Frontend is connected to Backend" });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
