@@ -1,0 +1,162 @@
+# Workshop Feedback & Certificate System - Project Documentation
+
+## 1. Overview
+
+This React + Firebase-based web application enables workshop trainers to:
+
+* Create and manage workshop feedback forms.
+* Collect student feedback and verified contact information via OTP.
+* Automatically generate personalized certificates in PDF format.
+* Deliver certificates via Email and WhatsApp.
+
+---
+
+## 2. Tech Stack
+
+* **Frontend:** React 18.2 + TypeScript + Bootstrap
+* **Backend:** Node.js (Express) + Firebase (Firestore, Auth, Storage)
+* **Authentication:** Firebase Auth
+* **Certificate Delivery:** Nodemailer (Email), Twilio (WhatsApp)
+
+---
+
+## 3. Setup Instructions
+
+### A. Firebase Setup
+
+1. Create a Firebase project.
+2. Enable **Authentication** > Email/Password.
+3. Create Firestore collections:
+
+   * `users` (with `role: "admin"` for each admin)
+   * `workshops`
+   * `submissions`
+4. Enable **Storage** with two folders:
+
+   * `templates` (optional)
+   * `certificates` (for storing generated PDFs)
+5. Deploy Hosting (for client):
+
+   * `firebase init` (select hosting + Firestore + Storage + Functions)
+   * Add `build/` folder as public directory
+   * `firebase deploy`
+
+### B. Backend Setup (Node.js Server)
+
+```bash
+cd workshop-backend
+npm install
+```
+
+Create `.env` file:
+
+```env
+
+EMAIL_USER=rd.innovations.2024@gmail.com
+EMAIL_PASS=vnht gtdd wzwb lahl
+TWILIO_ACCOUNT_SID=ACd238fc920d39e8b9988c3650c9d5ddc6
+TWILIO_AUTH_TOKEN=401372f35d30b53f44029c1db08675a9
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+BACKEND_PUBLIC_URL=https://workshop-backend-cg3f.onrender.com
+```
+
+Run the server:
+
+```bash
+npm run dev
+```
+
+---
+
+## 4. User Guide
+
+### Admin Flow:
+
+1. Login using Firebase Email/Password.
+2. Create a workshop form:
+
+   * Input workshop name, college name, date/time, instructions.
+   * Toggle to generate a unique public/private form link.
+3. View and manage forms via dashboard:
+
+   * Copy links
+   * View submission stats
+   * Edit, save draft, or deactivate
+
+### Student Flow:
+
+1. Open the feedback form via shared link.
+2. Read-only fields: Workshop name, college, date, time
+3. Enter:
+
+   * Name, Course, Phone, Email, Feedback
+   * OTP is sent to **Email**
+   * Verify email before submitting
+4. After submission:
+
+   * Certificate is generated
+   * Delivered via email (with attachment) and WhatsApp (with link)
+
+---
+
+## 5. API Documentation
+
+### POST `/sendEmailOtp`
+
+* **Body:** `{ email: string }`
+* **Response:** `{ success: boolean, message: string }`
+
+### POST `/verifyEmailOtp`
+
+* **Body:** `{ email: string, otp: string }`
+* **Response:** `{ success: boolean, message: string }`
+
+### POST `/generate-certificate`
+
+* **Body:** `{ name, email, phone, course, formId }`
+* **Response:** `{ success: boolean, message: string, filename: string }`
+
+---
+
+## 6. Deployment
+
+### Frontend:
+
+* Deployed to: **Firebase Hosting**
+* URL: `https://gilded-lily-fb2c26.netlify.app/`
+
+### Backend:
+
+* Deployed to: **Render**
+* URL: `https://workshop-backend-cg3f.onrender.com`
+
+---
+
+## 7. Admin Credentials for Testing
+
+```
+Email: rd.innovations.2024@gmail.com
+Password: 000000
+```
+
+Ensure the admin user exists in Firebase Auth and `users` collection with:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+---
+
+## 8. Additional Notes
+
+* All OTPs expire in 5 minutes
+* Email OTP verification is **mandatory** to submit feedback
+* Certificates are dynamically inserted and stored at `certificates/` in backend
+* Uses environment variables for all secrets
+* Loading states, success toasts, and error alerts included for UX
+* Secure endpoints and input validation are applied both client-side and server-side
+
+---
+
