@@ -1,4 +1,3 @@
-// otpStore.js
 const otpMap = new Map();
 
 function setOtp(email, otp) {

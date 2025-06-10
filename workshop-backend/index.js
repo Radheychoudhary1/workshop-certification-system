@@ -12,13 +12,12 @@ const { db } = require("./firebaseAdmin");
 const generateCertificate = require("./certificateTemplate");
 
 const app = express();
-// const PORT = 5000;
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ Serve the certificates folder statically
+// Serve the certificates folder statically
 app.use('/certificates', express.static(path.join(__dirname, 'certificates')));
 
 // Email Transporter
@@ -37,9 +36,7 @@ const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_A
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-// =======================
 // OTP Routes
-// =======================
 app.post("/sendEmailOtp", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: "Email is required" });
@@ -71,9 +68,7 @@ app.post("/verifyEmailOtp", (req, res) => {
     : res.status(400).json({ success: false, message: result.message });
 });
 
-// =======================
 // Certificate + Email + WhatsApp
-// =======================
 app.post("/generate-certificate", async (req, res) => {
   const { name, email, course, phone, formId } = req.body;
 
@@ -107,7 +102,7 @@ app.post("/generate-certificate", async (req, res) => {
       workshop: workshopName,
       date: new Date(dateTime).toDateString(),
     }, outputPath);
-    console.log("✅ Certificate created at:", outputPath);
+    console.log("Certificate created at:", outputPath);
 
     // Email with attachment
     const htmlBody = `
@@ -145,12 +140,12 @@ app.post("/generate-certificate", async (req, res) => {
       to: whatsappTo,
       body: msg,
     });
-    console.log("✅ WhatsApp message sent to:", phone);
+    console.log("WhatsApp message sent to:", phone);
 
     res.json({ success: true, message: "Certificate generated, emailed, and WhatsApp sent", filename });
 
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("Error:", err);
     res.status(500).json({ success: false, message: "Failed to generate/send certificate" });
   }
 });
@@ -158,7 +153,7 @@ app.post("/generate-certificate", async (req, res) => {
 // =======================
 
 app.get("/api/test", (req, res) => {
-  res.json({ success: true, message: "Frontend is connected to Backend ✅" });
+  res.json({ success: true, message: "Frontend is connected to Backend" });
 });
 
 app.listen(PORT, () => {

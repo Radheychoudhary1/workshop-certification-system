@@ -1,5 +1,3 @@
-// workshop-backend/testCertificate.js
-
 const { db } = require('./firebaseAdmin');
 const generateCertificate = require('./certificateTemplate');
 const path = require('path');
@@ -12,7 +10,7 @@ async function run() {
     const snapshot = await submissionsRef.orderBy('timestamp', 'desc').limit(1).get();
 
     if (snapshot.empty) {
-      console.log('❌ No submissions found.');
+      console.log('No submissions found.');
       return;
     }
 
@@ -26,7 +24,7 @@ async function run() {
     const workshopSnap = await workshopRef.get();
 
     if (!workshopSnap.exists) {
-      console.log(`❌ Workshop not found for ID: ${formId}`);
+      console.log(`Workshop not found for ID: ${formId}`);
       return;
     }
 
@@ -55,9 +53,9 @@ async function run() {
       outputPath
     );
 
-    console.log(`✅ Certificate generated at: ${outputPath}`);
+    console.log(`Certificate generated at: ${outputPath}`);
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('Error:', error);
   }
 }
 
