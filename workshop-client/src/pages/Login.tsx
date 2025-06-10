@@ -2,8 +2,8 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../firebase';
 import Loader from '../components/Loader';
+import { auth, db } from '../firebase';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>('');
@@ -50,43 +50,18 @@ const Login: React.FC = () => {
             <form onSubmit={handleLogin} noValidate>
               <div className="mb-3">
                 <label htmlFor="email" className="form-label">Email address</label>
-                <input
-                  type="email"
-                  id="email"
-                  className="form-control"
-                  placeholder="Enter email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <input type="email" id="email" className="form-control" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
 
               <div className="mb-3">
                 <label htmlFor="password" className="form-label">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  className="form-control"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <input type="password" id="password" className="form-control" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
 
               {error && <div className="alert alert-danger">{error}</div>}
               {success && <div className="alert alert-success">{success}</div>}
 
-              {/* <button
-                type="submit"
-                className="btn btn-primary w-100"
-                disabled={loading}
-              >
-                {loading ? 'Logging in...' : 'Login'}
-              </button> */}
-              <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-  Login
-</button>
+              <button type="submit" className="btn btn-primary w-100" disabled={loading}>Login</button>
             </form>
           </div>
         </div>

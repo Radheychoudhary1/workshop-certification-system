@@ -1,14 +1,11 @@
 import { signOut } from 'firebase/auth';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import Pagination from '../components/Pagination';
 import { auth, db } from '../firebase';
-import { query, where } from 'firebase/firestore';
-
-
 interface FormData {
   id: string;
   collegeName: string;
@@ -98,8 +95,6 @@ const Dashboard: React.FC = () => {
       setExportingId(null);
     }
   };
-
-
 
   useEffect(() => {
     const fetchWorkshopsWithCounts = async () => {
@@ -197,13 +192,7 @@ const Dashboard: React.FC = () => {
 
           {/* Search */}
           <div className="mb-4">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by workshop or college..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <input type="text" className="form-control" placeholder="Search by workshop or college..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
 
           {/* Cards */}
@@ -234,16 +223,8 @@ const Dashboard: React.FC = () => {
 
                         {form.active && form.linkId ? (
                           <div className="input-group input-group-sm mb-2">
-                            <input
-                              type="text"
-                              className="form-control"
-                              readOnly
-                              value={`${window.location.origin}/form/${form.id}`}
-                            />
-                            <button
-                              className="btn btn-outline-dark"
-                              onClick={() => handleCopyLink(`${window.location.origin}/form/${form.id}`, form.id)}
-                            >
+                            <input type="text" className="form-control" readOnly value={`${window.location.origin}/form/${form.id}`} />
+                            <button className="btn btn-outline-dark" onClick={() => handleCopyLink(`${window.location.origin}/form/${form.id}`, form.id)}>
                               {copiedLinkId === form.id ? 'Copied' : 'Copy Link'}
                             </button>
                           </div>
@@ -252,17 +233,10 @@ const Dashboard: React.FC = () => {
                         )}
 
                         <div className="d-flex gap-2 mt-auto">
-                          <Link
-                            to={`/dashboard/form/${form.id}`}
-                            className="btn btn-sm btn-primary fw-semibold w-100"
-                          >
+                          <Link to={`/dashboard/form/${form.id}`} className="btn btn-sm btn-primary fw-semibold w-100">
                             View Responses
                           </Link>
-                          <button
-                            className="btn btn-sm btn-outline-primary w-100"
-                            disabled={exportingId === form.id || form.responsesCount === 0}
-                            onClick={() => exportToCSV(form.id)}
-                          >
+                          <button className="btn btn-sm btn-outline-primary w-100" disabled={exportingId === form.id || form.responsesCount === 0} onClick={() => exportToCSV(form.id)}>
                             {exportingId === form.id ? 'Exporting...' : 'Export CSV'}
                           </button>
                         </div>
@@ -273,11 +247,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               {filteredForms.length > itemsPerPage && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
               )}
             </>
           )}

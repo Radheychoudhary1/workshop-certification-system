@@ -1,9 +1,8 @@
-// src/pages/FormResponses.tsx
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { Link, useParams } from 'react-router-dom';
 import Loader from '../components/Loader';
+import { db } from '../firebase';
 
 interface FeedbackData {
   name: string;
@@ -44,10 +43,7 @@ const FormResponses: React.FC = () => {
       <div className="d-flex justify-content-between align-items-center mb-4 bg-dark text-white p-3 rounded shadow-sm">
         <h1 className="h4 m-0">📋 Form Responses</h1>
         <div>
-          <Link
-            to="/dashboard"
-            className="btn btn-warning text-dark fw-semibold w-100 w-md-auto"
-          >
+          <Link to="/dashboard" className="btn btn-warning text-dark fw-semibold w-100 w-md-auto">
             ← Back to Dashboard
           </Link>
         </div>

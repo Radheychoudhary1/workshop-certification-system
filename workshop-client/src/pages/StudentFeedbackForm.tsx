@@ -1,11 +1,8 @@
-// src/pages/StudentFeedbackForm.tsx
-
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import bannerImage from '../assets/images/page-banner.jpg';
 import { db } from '../firebase';
-
 interface FormData {
   collegeName: string;
   workshopName: string;
@@ -30,7 +27,6 @@ const StudentFeedbackForm: React.FC = () => {
   const [emailOtp, setEmailOtp] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'verifying' | 'verified'>('idle');
-
 
   const [showTwilioAlert, setShowTwilioAlert] = useState(false);
   const [twilioAlertShown, setTwilioAlertShown] = useState(false);
@@ -86,7 +82,6 @@ const StudentFeedbackForm: React.FC = () => {
     }
   };
 
-
   const handleVerifyEmailOtp = async () => {
     setEmailStatus('verifying');
     try {
@@ -106,7 +101,6 @@ const StudentFeedbackForm: React.FC = () => {
       if (emailStatus !== 'verified') setEmailStatus('idle');
     }
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,11 +172,7 @@ const StudentFeedbackForm: React.FC = () => {
       <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
         <div className="text-center p-5 rounded-4 shadow-sm bg-white border-0" style={{ maxWidth: '600px' }}>
           <div className="mb-4">
-            <div
-              className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle"
-              style={{ width: '60px', height: '60px', fontSize: '30px' }}
-            >
-              ✓
+            <div className="d-inline-flex justify-content-center align-items-center bg-success text-white rounded-circle" style={{ width: '60px', height: '60px', fontSize: '30px' }}>✓
             </div>
           </div>
           <h4 className="fw-bold text-dark mb-2">Thank you! 🎉</h4>
@@ -213,16 +203,7 @@ const StudentFeedbackForm: React.FC = () => {
 
   return (
     <div className="bg-light min-vh-100">
-      <div
-        className="w-100 position-relative"
-        style={{
-          height: '220px',
-          backgroundImage: `url(${bannerImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderBottom: '5px solid var(--bs-warning)',
-        }}
-      >
+      <div className="w-100 position-relative" style={{ height: '220px', backgroundImage: `url(${bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center', borderBottom: '5px solid var(--bs-warning)' }}>
         <div className="position-absolute translate-middle text-white text-center px-3 top-40 start-50">
           <h2 className="fw-semibold" style={{ textShadow: '1px 1px 4px #000' }}>
             Feedback Form
@@ -248,11 +229,7 @@ const StudentFeedbackForm: React.FC = () => {
                 <div className="alert alert-warning alert-dismissible fade show small" role="alert">
                   📲 To receive your certificate via WhatsApp, please send <strong>"join angle-particles"</strong> from the number you entered to{' '}
                   <strong>+1 415 523 8886</strong>. If already send this message then please Ignore it.
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowTwilioAlert(false)}
-                  />
+                  <button type="button" className="btn-close" onClick={() => setShowTwilioAlert(false)} />
                 </div>
               )}
 
@@ -267,68 +244,30 @@ const StudentFeedbackForm: React.FC = () => {
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Phone</label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    required
-                  />
+                  <input type="tel" className="form-control" value={phone} onChange={handlePhoneChange} required />
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <input type="email" className="form-control" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   {!emailVerified && (
                     <div className="d-flex flex-column gap-2 mt-2">
                       {!emailOtpSent ? (
-                        <button
-                          type="button"
-                          onClick={handleSendEmailOtp}
-                          className="btn btn-secondary btn-sm"
-                          disabled={emailStatus === 'sending'}
-                        >
+                        <button type="button" onClick={handleSendEmailOtp} className="btn btn-secondary btn-sm" disabled={emailStatus === 'sending'}>
                           {emailStatus === 'sending' ? 'Sending...' : 'Send OTP'}
                         </button>
                       ) : (
                         <>
                           <div className="d-flex gap-2">
-                            <input
-                              type="text"
-                              className="form-control form-control-sm"
-                              placeholder="Enter OTP"
-                              value={emailOtp}
-                              onChange={(e) => setEmailOtp(e.target.value)}
-                            />
-                            <button
-                              type="button"
-                              onClick={handleVerifyEmailOtp}
-                              className={`btn btn-sm ${emailStatus === 'verified' ? 'btn-success' : 'btn-secondary'}`}
-                              disabled={emailStatus === 'verifying' || emailStatus === 'verified'}
-                            >
-                              {emailStatus === 'verifying'
-                                ? 'Verifying...'
-                                : emailStatus === 'verified'
-                                  ? 'Verified ✅'
-                                  : 'Verify OTP'}
+                            <input type="text" className="form-control form-control-sm" placeholder="Enter OTP" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} />
+                            <button type="button" onClick={handleVerifyEmailOtp} className={`btn btn-sm ${emailStatus === 'verified' ? 'btn-success' : 'btn-secondary'}`} disabled={emailStatus === 'verifying' || emailStatus === 'verified'}>
+                              {emailStatus === 'verifying' ? 'Verifying...' : emailStatus === 'verified' ? 'Verified ✅' : 'Verify OTP'}
                             </button>
                           </div>
                           <div className="d-flex justify-content-between align-items-center mt-1">
                             {cooldown > 0 ? (
                               <span className="text-muted small">Resend available in {cooldown}s</span>
                             ) : (
-                              <button
-                                type="button"
-                                className="btn btn-link btn-sm p-0"
-                                onClick={handleSendEmailOtp}
-                              >
-                                🔁 Resend OTP
+                              <button type="button" className="btn btn-link btn-sm p-0" onClick={handleSendEmailOtp}> 🔁 Resend OTP
                               </button>
                             )}
                           </div>
@@ -338,7 +277,6 @@ const StudentFeedbackForm: React.FC = () => {
                   )}
                   {emailVerified && <p className="text-success small mt-1">✅ Email Verified</p>}
                 </div>
-
 
                 <div className="mb-4">
                   <label className="form-label">Feedback</label>
@@ -350,7 +288,6 @@ const StudentFeedbackForm: React.FC = () => {
                   </button>
                 </div>
               </form>
-
             </div>
           </div>
         </div>
