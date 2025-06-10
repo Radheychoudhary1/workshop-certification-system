@@ -1,17 +1,15 @@
 // src/App.tsx
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import PrivateRoute from './components/PrivateRoute';
+import { Suspense, lazy } from 'react';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import GlobalLoader from './components/GlobalLoader';
+import PrivateRoute from './components/PrivateRoute';
 
 // Lazy load all major pages
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const FormCreator = lazy(() => import('./pages/FormCreator'));
-const FeedbackForm = lazy(() => import('./pages/FeedbackForm'));
 const StudentFeedbackForm = lazy(() => import('./pages/StudentFeedbackForm'));
 const FormResponses = lazy(() => import('./pages/FormResponses'));
-const TestBackend = lazy(() => import('./pages/TestBackend'));
 
 function App() {
   return (
@@ -38,17 +36,8 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/feedback/:id"
-            element={
-              <PrivateRoute>
-                <FeedbackForm />
-              </PrivateRoute>
-            }
-          />
           <Route path="/form/:formId" element={<StudentFeedbackForm />} />
           <Route path="/dashboard/form/:id" element={<FormResponses />} />
-          <Route path="/test-backend" element={<TestBackend />} />
         </Routes>
       </Suspense>
     </Router>
