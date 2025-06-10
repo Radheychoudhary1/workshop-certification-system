@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import Loader from '../components/Loader';
 import Pagination from '../components/Pagination';
 import { auth, db } from '../firebase';
+import { query, where } from 'firebase/firestore';
+
 
 interface FormData {
   id: string;
@@ -44,55 +46,59 @@ const Dashboard: React.FC = () => {
   };
 
   const exportToCSV = async (formId: string) => {
-  try {
-    setExportingId(formId);
-    console.log('Fetching responses for formId:', formId);
+    try {
+      setExportingId(formId);
+      console.log('Fetching submissions for formId:', formId);
 
-    const responsesRef = collection(db, 'workshops', formId, 'responses');
-    const snapshot = await getDocs(responsesRef);
+      const submissionsRef = collection(db, 'submissions');
+      const q = query(submissionsRef, where('formId', '==', formId));
+      const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
-      toast.info('No submissions to export.');
-      console.warn('No documents found in responses.');
-      return;
+      if (snapshot.empty) {
+        toast.info('No submissions to export.');
+        console.warn('No matching submissions found.');
+        return;
+      }
+
+      const csvRows: string[] = [];
+      const headers = ['Name', 'Email', 'Phone', 'Rating', 'Suggestion', 'Submitted At'];
+      csvRows.push(headers.join(','));
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const row = [
+          `"${data.name || ''}"`,
+          `"${data.email || ''}"`,
+          `"${data.phone || ''}"`,
+          `"${data.rating || ''}"`,
+          `"${data.suggestion || ''}"`,
+          `"${data.submittedAt?.toDate?.().toLocaleString() || ''}"`,
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `workshop_${formId}_responses.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('CSV download triggered.');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Failed to export CSV.');
+    } finally {
+      setExportingId(null);
     }
+  };
 
-    const csvRows: string[] = [];
-    const headers = ['Rating', 'Suggestion', 'Submitted At'];
-    csvRows.push(headers.join(','));
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const row = [
-        `"${data.rating || ''}"`,
-        `"${data.suggestion || ''}"`,
-        `"${data.submittedAt?.toDate?.().toLocaleString() || ''}"`,
-      ];
-      csvRows.push(row.join(','));
-    });
-
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `workshop_${formId}_responses.csv`;
-
-    // Fix for some browsers (append + click + remove)
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    console.log('CSV download triggered.');
-  } catch (error) {
-    console.error('Error exporting CSV:', error);
-    toast.error('Failed to export CSV.');
-  } finally {
-    setExportingId(null);
-  }
-};
 
 
   useEffect(() => {
