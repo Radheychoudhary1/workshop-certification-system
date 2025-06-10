@@ -1,10 +1,10 @@
 // src/pages/StudentFeedbackForm.tsx
 
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getDoc, doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import bannerImage from '../assets/images/page-banner.jpg';
+import { db } from '../firebase';
 
 interface FormData {
   collegeName: string;
@@ -37,7 +37,7 @@ const [phoneVerified, setPhoneVerified] = useState(false);
   const [showTwilioAlert, setShowTwilioAlert] = useState(false);
   const [twilioAlertShown, setTwilioAlertShown] = useState(false);
 
-  // const isFormVerified = emailVerified;
+  const isFormVerified = emailVerified;
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -57,35 +57,19 @@ const [phoneVerified, setPhoneVerified] = useState(false);
     fetchForm();
   }, [formId]);
 
-const handleSendPhoneOtp = async () => {
+  const handleSendPhoneOtp = async () => {
   if (!phone) return alert('Please enter your phone number');
-
-  const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
-  console.log("📲 Sending phone OTP to:", formattedPhone);
-
-  try {
-    const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendPhoneOtp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: formattedPhone.replace('+', '') }), // pass without "+"
-    });
-
-    const data = await res.json();
-    console.log("📥 OTP Response:", data);
-
-    if (data.success) {
-      setPhoneOtpSent(true);
-      alert('OTP sent to phone via WhatsApp');
-    } else {
-      alert(data.message || 'Failed to send OTP');
-    }
-  } catch (err) {
-    console.error("❌ Fetch error:", err);
-    alert('Request failed. See console.');
-  }
+  const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendPhoneOtp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    setPhoneOtpSent(true);
+    alert('OTP sent to phone via WhatsApp');
+  } else alert(data.message);
 };
-
-
 
 const handleVerifyPhoneOtp = async () => {
   const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyPhoneOtp`, {
