@@ -1,6 +1,5 @@
-// src/components/Loader.tsx
 import React from 'react';
-import '../styles/_theme.scss'; // Make sure this is imported somewhere globally
+import '../styles/_theme.scss';
 
 const Loader: React.FC = () => (
   <div className="global-loader-overlay">

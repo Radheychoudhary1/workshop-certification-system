@@ -3,7 +3,6 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../firebase';
 import Loader from "../components/Loader";
 
-
 type AuthContextType = {
   currentUser: User | null;
   loading: boolean;

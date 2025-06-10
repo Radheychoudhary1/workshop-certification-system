@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from "../components/Loader";
 
-
 type PrivateRouteProps = {
   children: ReactElement;
 };

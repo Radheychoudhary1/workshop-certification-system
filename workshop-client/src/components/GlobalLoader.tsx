@@ -1,4 +1,3 @@
-// src/components/GlobalLoader.tsx
 import React from 'react';
 import Loader from './Loader';
 

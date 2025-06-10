@@ -1,4 +1,3 @@
-// src/App.tsx
 import { Suspense, lazy } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import GlobalLoader from './components/GlobalLoader';
@@ -18,24 +17,10 @@ function App() {
         <Routes>
           {/* Public Route */}
           <Route path="/" element={<Login />} />
-
+          
           {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/dashboard/create"
-            element={
-              <PrivateRoute>
-                <FormCreator />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>}/>
+          <Route path="/dashboard/create" element={<PrivateRoute><FormCreator /></PrivateRoute>}/>
           <Route path="/form/:formId" element={<StudentFeedbackForm />} />
           <Route path="/dashboard/form/:id" element={<FormResponses />} />
         </Routes>
