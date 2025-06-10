@@ -55,45 +55,57 @@ const StudentFeedbackForm: React.FC = () => {
     fetchForm();
   }, [formId]);
 
-const handleSendEmailOtp = async () => {
-  if (!email) return;
-  setEmailStatus('sending');
-  try {
-    const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendEmailOtp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setEmailOtpSent(true);
-    }
-  } catch (err) {
-    console.error('Error sending OTP:', err);
-  } finally {
-    setEmailStatus('idle');
-  }
-};
+  const [cooldown, setCooldown] = useState(0);
 
-const handleVerifyEmailOtp = async () => {
-  setEmailStatus('verifying');
-  try {
-    const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyEmailOtp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp: emailOtp }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setEmailVerified(true);
-      setEmailStatus('verified');
+  // Cooldown countdown effect
+  useEffect(() => {
+    if (cooldown > 0) {
+      const interval = setInterval(() => setCooldown(c => c - 1), 1000);
+      return () => clearInterval(interval);
     }
-  } catch (err) {
-    console.error('Error verifying OTP:', err);
-  } finally {
-    if (emailStatus !== 'verified') setEmailStatus('idle');
-  }
-};
+  }, [cooldown]);
+
+  const handleSendEmailOtp = async () => {
+    if (!email || cooldown > 0) return;
+    setEmailStatus('sending');
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE}/sendEmailOtp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailOtpSent(true);
+        setCooldown(60); // Start 60s cooldown
+      }
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+    } finally {
+      setEmailStatus('idle');
+    }
+  };
+
+
+  const handleVerifyEmailOtp = async () => {
+    setEmailStatus('verifying');
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE}/verifyEmailOtp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: emailOtp }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailVerified(true);
+        setEmailStatus('verified');
+      }
+    } catch (err) {
+      console.error('Error verifying OTP:', err);
+    } finally {
+      if (emailStatus !== 'verified') setEmailStatus('idle');
+    }
+  };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -264,53 +276,69 @@ const handleVerifyEmailOtp = async () => {
                   />
                 </div>
                 <div className="mb-3">
-  <label className="form-label">Email</label>
-  <input
-    type="email"
-    className="form-control"
-    placeholder="Enter your email"
-    value={email}
-    onChange={(e) => setEmail(e.target.value)}
-    required
-  />
-  {!emailVerified && (
-    <div className="d-flex gap-2 mt-2">
-      {!emailOtpSent ? (
-        <button
-          type="button"
-          onClick={handleSendEmailOtp}
-          className="btn btn-secondary btn-sm"
-          disabled={emailStatus === 'sending'}
-        >
-          {emailStatus === 'sending' ? 'Sending...' : 'Send OTP'}
-        </button>
-      ) : (
-        <>
-          <input
-            type="text"
-            className="form-control form-control-sm"
-            placeholder="Enter OTP"
-            value={emailOtp}
-            onChange={(e) => setEmailOtp(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={handleVerifyEmailOtp}
-            className={`btn btn-sm ${emailStatus === 'verified' ? 'btn-success' : 'btn-secondary'}`}
-            disabled={emailStatus === 'verifying' || emailStatus === 'verified'}
-          >
-            {emailStatus === 'verifying'
-              ? 'Verifying...'
-              : emailStatus === 'verified'
-              ? 'Verified ✅'
-              : 'Verify OTP'}
-          </button>
-        </>
-      )}
-    </div>
-  )}
-  {emailVerified && <p className="text-success small mt-1">✅ Email Verified</p>}
-</div>
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  {!emailVerified && (
+                    <div className="d-flex flex-column gap-2 mt-2">
+                      {!emailOtpSent ? (
+                        <button
+                          type="button"
+                          onClick={handleSendEmailOtp}
+                          className="btn btn-secondary btn-sm"
+                          disabled={emailStatus === 'sending'}
+                        >
+                          {emailStatus === 'sending' ? 'Sending...' : 'Send OTP'}
+                        </button>
+                      ) : (
+                        <>
+                          <div className="d-flex gap-2">
+                            <input
+                              type="text"
+                              className="form-control form-control-sm"
+                              placeholder="Enter OTP"
+                              value={emailOtp}
+                              onChange={(e) => setEmailOtp(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleVerifyEmailOtp}
+                              className={`btn btn-sm ${emailStatus === 'verified' ? 'btn-success' : 'btn-secondary'}`}
+                              disabled={emailStatus === 'verifying' || emailStatus === 'verified'}
+                            >
+                              {emailStatus === 'verifying'
+                                ? 'Verifying...'
+                                : emailStatus === 'verified'
+                                  ? 'Verified ✅'
+                                  : 'Verify OTP'}
+                            </button>
+                          </div>
+                          <div className="d-flex justify-content-between align-items-center mt-1">
+                            {cooldown > 0 ? (
+                              <span className="text-muted small">Resend available in {cooldown}s</span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm p-0"
+                                onClick={handleSendEmailOtp}
+                              >
+                                🔁 Resend OTP
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {emailVerified && <p className="text-success small mt-1">✅ Email Verified</p>}
+                </div>
+
 
                 <div className="mb-4">
                   <label className="form-label">Feedback</label>
