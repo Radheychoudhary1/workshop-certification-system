@@ -7,7 +7,7 @@ function generateCertificate({ name, course, workshop, college, date }, outputPa
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 50 });
 
-    const logoPath = path.join(__dirname, 'assets', 'logo.png');
+    // const logoPath = path.join(__dirname, 'assets', 'logo.png');
     const bgPath = path.join(__dirname, 'assets', 'background.png');
     const sign1 = path.join(__dirname, 'assets', 'sign_coordinator.png');
     const sign2 = path.join(__dirname, 'assets', 'sign_head.png');
@@ -28,9 +28,9 @@ function generateCertificate({ name, course, workshop, college, date }, outputPa
     doc.lineWidth(4).rect(20, 20, doc.page.width - 40, doc.page.height - 40).stroke('#004080');
 
     // Logo
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, doc.page.width / 2 - 40, 40, { width: 80 });
-    }
+    // if (fs.existsSync(logoPath)) {
+    //   doc.image(logoPath, doc.page.width / 2 - 40, 40, { width: 80 });
+    // }
 
     // Title
     doc

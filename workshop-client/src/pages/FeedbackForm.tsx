@@ -10,7 +10,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import bannerImage from '../assets/images/page-banner.jpg'; // Ensure this path is correct
+import bannerImage from '../assets/images/page-banner.jpg';
 
 const FeedbackForm: React.FC = () => {
   const { id } = useParams();

@@ -3,7 +3,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import bannerImage from '../assets/images/login-bg.jpg';
+import bannerImage from '../assets/images/page-banner.jpg';
 import { db } from '../firebase';
 
 interface FormData {
