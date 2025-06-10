@@ -248,16 +248,10 @@ const Dashboard: React.FC = () => {
                         <div className="d-flex gap-2 mt-auto">
                           <Link
                             to={`/dashboard/form/${form.id}`}
-                            className="btn btn-sm btn-outline-warning fw-semibold w-100"
+                            className="btn btn-sm btn-primary fw-semibold w-100"
                           >
                             View Responses
                           </Link>
-                          {/* <button
-                            className="btn btn-sm btn-outline-primary w-100"
-                            onClick={() => exportToCSV(form.id)}
-                          >
-                            Export CSV
-                          </button> */}
                           <button
                             className="btn btn-sm btn-outline-primary w-100"
                             disabled={exportingId === form.id || form.responsesCount === 0}
