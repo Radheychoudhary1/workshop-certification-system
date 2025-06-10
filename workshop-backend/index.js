@@ -29,7 +29,7 @@ const transporter = nodemailer.createTransport({
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// Email OTP
+// Email OTP Generate
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 

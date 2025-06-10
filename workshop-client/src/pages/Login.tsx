@@ -60,7 +60,7 @@ const Login: React.FC = () => {
 
               {error && <div className="alert alert-danger">{error}</div>}
               {success && <div className="alert alert-success">{success}</div>}
-
+              {/* Login Button */}
               <button type="submit" className="btn btn-primary w-100" disabled={loading}>Login</button>
             </form>
           </div>
