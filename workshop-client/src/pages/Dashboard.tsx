@@ -25,6 +25,8 @@ const Dashboard: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 6;
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const performLogout = async () => {
     await signOut(auth);
@@ -33,93 +35,104 @@ const Dashboard: React.FC = () => {
 
   const handleLogoutClick = () => setShowLogoutConfirm(true);
   const handleCancelLogout = () => setShowLogoutConfirm(false);
-  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
 
   const handleCopyLink = (link: string, id?: string) => {
     navigator.clipboard.writeText(link);
     setCopiedLinkId(id || null);
     toast.success('Feedback link copied!');
-    setTimeout(() => setCopiedLinkId(null), 2000); // Reset after 2 seconds
+    setTimeout(() => setCopiedLinkId(null), 2000);
   };
-
-
-  const fetchResponseCount = async (formId: string) => {
-    const responsesRef = collection(db, 'workshops', formId, 'responses');
-    const snapshot = await getDocs(responsesRef);
-    return snapshot.size;
-  };
-  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const exportToCSV = async (formId: string) => {
-    try {
-      setExportingId(formId);
-      const responsesRef = collection(db, 'workshops', formId, 'responses');
-      const snapshot = await getDocs(responsesRef);
+  try {
+    setExportingId(formId);
+    console.log('Fetching responses for formId:', formId);
 
-      if (snapshot.empty) {
-        toast.info('No submissions to export.');
-        return;
-      }
+    const responsesRef = collection(db, 'workshops', formId, 'responses');
+    const snapshot = await getDocs(responsesRef);
 
-      const csvRows: string[] = [];
-      const headers = ['Rating', 'Suggestion', 'Submitted At'];
-      csvRows.push(headers.join(','));
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const row = [
-          `"${data.rating}"`,
-          `"${data.suggestion}"`,
-          `"${data.submittedAt?.toDate?.().toLocaleString() || ''}"`,
-        ];
-        csvRows.push(row.join(','));
-      });
-
-      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `workshop_${formId}_responses.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error exporting CSV:', error);
-      toast.error('Failed to export CSV.');
-    } finally {
-      setExportingId(null);
+    if (snapshot.empty) {
+      toast.info('No submissions to export.');
+      console.warn('No documents found in responses.');
+      return;
     }
-  };
+
+    const csvRows: string[] = [];
+    const headers = ['Rating', 'Suggestion', 'Submitted At'];
+    csvRows.push(headers.join(','));
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const row = [
+        `"${data.rating || ''}"`,
+        `"${data.suggestion || ''}"`,
+        `"${data.submittedAt?.toDate?.().toLocaleString() || ''}"`,
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `workshop_${formId}_responses.csv`;
+
+    // Fix for some browsers (append + click + remove)
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log('CSV download triggered.');
+  } catch (error) {
+    console.error('Error exporting CSV:', error);
+    toast.error('Failed to export CSV.');
+  } finally {
+    setExportingId(null);
+  }
+};
 
 
   useEffect(() => {
-    const fetchForms = async () => {
+    const fetchWorkshopsWithCounts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'workshops'));
-        const fetchedForms: FormData[] = [];
+        const workshopsSnapshot = await getDocs(collection(db, 'workshops'));
+        const submissionsSnapshot = await getDocs(collection(db, 'submissions'));
 
-        for (const docSnap of querySnapshot.docs) {
-          const data = docSnap.data();
-          const responsesCount = await fetchResponseCount(docSnap.id);
-          fetchedForms.push({
-            id: docSnap.id,
+        const responseCountMap: Record<string, number> = {};
+        submissionsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const fid = data.formId;
+          if (fid) {
+            responseCountMap[fid] = (responseCountMap[fid] || 0) + 1;
+          }
+        });
+
+        const workshopsWithCount: FormData[] = workshopsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          const id = doc.id;
+          return {
+            id,
             collegeName: data.collegeName,
             workshopName: data.workshopName,
             dateTime: data.dateTime,
-            active: data.active || false,
-            linkId: data.linkId || '',
-            responsesCount,
-          });
-        }
-        setForms(fetchedForms);
-      } catch (error) {
-        console.error("Error fetching forms:", error);
+            active: data.active,
+            linkId: data.linkId,
+            responsesCount: responseCountMap[id] || 0,
+          };
+        });
+
+        setForms(workshopsWithCount);
+      } catch (err) {
+        console.error('Error fetching workshops or responses:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchForms();
+    fetchWorkshopsWithCounts();
   }, []);
 
   const filteredForms = forms.filter((form) =>
@@ -213,7 +226,6 @@ const Dashboard: React.FC = () => {
                         <p className="mb-1"><strong>Date & Time:</strong> {form.dateTime}</p>
                         <p className="mb-2"><strong>Responses:</strong> {form.responsesCount}</p>
 
-                        {/* Link Area */}
                         {form.active && form.linkId ? (
                           <div className="input-group input-group-sm mb-2">
                             <input
@@ -222,24 +234,12 @@ const Dashboard: React.FC = () => {
                               readOnly
                               value={`${window.location.origin}/form/${form.id}`}
                             />
-                            {/* <button
-                              className="btn btn-outline-dark"
-                              onClick={() =>
-                                handleCopyLink(`${window.location.origin}/form/${form.id}`)
-                              }
-                            >
-                              Copy Link
-                            </button> */}
                             <button
                               className="btn btn-outline-dark"
-                              onClick={() =>
-                                handleCopyLink(`${window.location.origin}/form/${form.id}`, form.id)
-                              }
+                              onClick={() => handleCopyLink(`${window.location.origin}/form/${form.id}`, form.id)}
                             >
                               {copiedLinkId === form.id ? 'Copied' : 'Copy Link'}
                             </button>
-
-
                           </div>
                         ) : (
                           <p className="text-muted small mb-2">Link not available (Inactive)</p>
@@ -259,7 +259,6 @@ const Dashboard: React.FC = () => {
                           >
                             {exportingId === form.id ? 'Exporting...' : 'Export CSV'}
                           </button>
-
                         </div>
                       </div>
                     </div>
