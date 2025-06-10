@@ -37,7 +37,7 @@ const [phoneVerified, setPhoneVerified] = useState(false);
   const [showTwilioAlert, setShowTwilioAlert] = useState(false);
   const [twilioAlertShown, setTwilioAlertShown] = useState(false);
 
-  const isFormVerified = emailVerified;
+  // const isFormVerified = emailVerified;
 
   useEffect(() => {
     const fetchForm = async () => {
