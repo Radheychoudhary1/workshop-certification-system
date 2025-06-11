@@ -1,3 +1,4 @@
+// index.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -27,15 +28,20 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
-// Email OTP Generate
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
+// ============ EMAIL OTP ROUTES ============
+
 app.post("/sendEmailOtp", async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+  if (!email)
+    return res.status(400).json({ success: false, message: "Email is required" });
 
   const otp = generateOtp();
   setOtp(email, otp);
@@ -56,7 +62,8 @@ app.post("/sendEmailOtp", async (req, res) => {
 
 app.post("/verifyEmailOtp", (req, res) => {
   const { email, otp } = req.body;
-  if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP are required" });
+  if (!email || !otp)
+    return res.status(400).json({ success: false, message: "Email and OTP are required" });
 
   const result = verifyOtp(email, otp);
   result.success
@@ -64,23 +71,17 @@ app.post("/verifyEmailOtp", (req, res) => {
     : res.status(400).json({ success: false, message: result.message });
 });
 
-// ✅ Certificate Generation
+// ============ GENERATE CERTIFICATE ============
+
 app.post("/generate-certificate", async (req, res) => {
   const { name, email, course, phone, formId } = req.body;
-  const snap = await db.collection("workshops").doc(formId).get();
-if (!snap.exists) {
-  return res.status(404).json({ error: "Workshop not found" });
-}
-const data = snap.data();
 
   if (!formId || !email || !name || !course) {
     return res.status(400).json({ success: false, message: "Missing fields" });
   }
 
   try {
-    const workshopRef = db.collection("workshops").doc(formId);
-    const snap = await workshopRef.get();
-
+    const snap = await db.collection("workshops").doc(formId).get();
     if (!snap.exists) {
       return res.status(404).json({ success: false, message: "Workshop not found" });
     }
@@ -92,69 +93,41 @@ const data = snap.data();
 
     const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}.pdf`;
     const outputPath = path.join(outputDir, filename);
-    const backendBaseURL = process.env.BACKEND_PUBLIC_URL;
-    const certificateLink = `${backendBaseURL}/certificates/${filename}`;
+    const certificateLink = `${process.env.BACKEND_PUBLIC_URL}/certificates/${filename}`;
 
-    // ✅ 1. Generate Certificate
-    try {
-      console.log("📄 Generating certificate for:", name);
-      await generateCertificate(
-        {
-          name,
-          course,
-          college: collegeName,
-          workshop: workshopName,
-          date: new Date(dateTime).toDateString(),
-        },
-        outputPath
-      );
-      console.log("✅ Certificate created:", outputPath);
-    } catch (pdfErr) {
-      console.error("❌ Failed to generate certificate PDF:", pdfErr);
-      return res.status(500).json({ success: false, message: "Error generating PDF" });
-    }
+    await generateCertificate(
+      {
+        name,
+        course,
+        college: collegeName,
+        workshop: workshopName,
+        date: new Date(dateTime).toDateString(),
+      },
+      outputPath
+    );
 
-    // ✅ 2. Send Email with Attachment
-    try {
-      const htmlBody = `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2 style="color: #004080;">🎉 Congratulations, ${name}!</h2>
-          <p>You have successfully completed the <b>${workshopName}</b> workshop at <b>${collegeName}</b>.</p>
-          <p>📎 Your certificate is attached to this email.</p>
-          <p>Best wishes,<br/>Team Workshop</p>
-        </div>
-      `;
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #004080;">🎉 Congratulations, ${name}!</h2>
+        <p>You have successfully completed the <b>${workshopName}</b> workshop at <b>${collegeName}</b>.</p>
+        <p>📎 Your certificate is attached to this email.</p>
+        <p>Best wishes,<br/>Team Workshop</p>
+      </div>
+    `;
 
-      console.log("📧 Sending email to:", email);
-      await transporter.sendMail({
-        from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: `🎓 Your Certificate from ${collegeName}`,
-        html: htmlBody,
-        attachments: [{ filename, path: outputPath }],
-      });
-      console.log("✅ Email sent.");
-    } catch (emailErr) {
-      console.error("❌ Failed to send email:", emailErr);
-      return res.status(500).json({ success: false, message: "Error sending email" });
-    }
+    await transporter.sendMail({
+      from: `"Workshop Certificates" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `🎓 Your Certificate from ${collegeName}`,
+      html: htmlBody,
+      attachments: [{ filename, path: outputPath }],
+    });
 
-    // ✅ 3. Send WhatsApp Message
-    try {
-      const whatsappTo = `whatsapp:+91${phone}`;
-      const msg = `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready.\n\n📩 Sent to: ${email}\n📄 Download: ${certificateLink}\n\nThank you!\n- ${collegeName}`;
-
-      console.log("📲 Sending WhatsApp to:", whatsappTo);
-      await twilioClient.messages.create({
-        from: process.env.TWILIO_WHATSAPP_FROM,
-        to: whatsappTo,
-        body: msg,
-      });
-      console.log("✅ WhatsApp sent.");
-    } catch (waErr) {
-      console.error("❌ Failed to send WhatsApp:", waErr);
-      return res.status(500).json({ success: false, message: "Error sending WhatsApp message" });
-    }
+    await twilioClient.messages.create({
+      from: process.env.TWILIO_WHATSAPP_FROM,
+      to: `whatsapp:+91${phone}`,
+      body: `🎉 Hello ${name}! Your workshop certificate for "${workshopName}" is ready.\n\n📩 Sent to: ${email}\n📄 Download: ${certificateLink}\n\nThank you!\n- ${collegeName}`,
+    });
 
     res.json({
       success: true,
@@ -162,12 +135,12 @@ const data = snap.data();
       filename,
     });
   } catch (err) {
-    console.error("🔥 General Error:", err);
-    res.status(500).json({ success: false, message: "Failed to generate/send certificate" });
+    console.error("🔥 Error in /generate-certificate:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-// =========================
+// ============ TEST ROUTE ============
 
 app.get("/api/test", (req, res) => {
   res.json({ success: true, message: "Frontend is connected to Backend" });
