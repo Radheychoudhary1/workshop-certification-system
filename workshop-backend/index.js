@@ -91,7 +91,9 @@ app.post("/generate-certificate", async (req, res) => {
     const outputDir = path.join(__dirname, "certificates");
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 
-    const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}.pdf`;
+    // const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}.pdf`;
+    const filename = `${name.toLowerCase().replace(/ /g, "-")}_${formId}_${Date.now()}.pdf`;
+
     const outputPath = path.join(outputDir, filename);
     const certificateLink = `${process.env.BACKEND_PUBLIC_URL}/certificates/${filename}`;
 
